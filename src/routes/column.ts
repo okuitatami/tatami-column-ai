@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import type { Bindings } from '../types';
 import { getSessionIdFromCookie } from '../utils/auth';
 import { getUserFromSession } from '../utils/db';
-import { generateTitles, generateColumn, analyzeWebsite } from '../utils/claude';
+import { getAIProvider, getProviderFromEnv } from '../utils/ai-provider';
 import { 
   generateMetaDescription, 
   extractKeywords, 
@@ -48,8 +48,10 @@ column.post('/analyze-website', async (c) => {
 
     const html = await response.text();
 
-    // Claude APIでウェブサイトを解析
-    const analysis = await analyzeWebsite(c.env.CLAUDE_API_KEY, url, html);
+    // AI Providerを取得してウェブサイトを解析
+    const provider = getProviderFromEnv(c.env.AI_PROVIDER);
+    const aiProvider = getAIProvider(provider, c.env.CLAUDE_API_KEY);
+    const analysis = await aiProvider.analyzeWebsite(url, html);
 
     return c.json({ success: true, analysis });
   } catch (error) {
@@ -70,10 +72,12 @@ column.post('/generate-titles', async (c) => {
       return c.json({ error: 'テーマは必須です' }, 400);
     }
 
-    // Claude APIでタイトル候補を生成
-    const titles = await generateTitles(c.env.CLAUDE_API_KEY, theme, websiteInfo);
+    // AI Providerを取得してタイトル候補を生成
+    const provider = getProviderFromEnv(c.env.AI_PROVIDER);
+    const aiProvider = getAIProvider(provider, c.env.CLAUDE_API_KEY);
+    const titles = await aiProvider.generateTitles(theme, websiteInfo);
 
-    return c.json({ success: true, titles });
+    return c.json({ success: true, titles, provider });
   } catch (error) {
     console.error('Title generation error:', error);
     return c.json({ 
@@ -92,8 +96,10 @@ column.post('/generate-column', async (c) => {
       return c.json({ error: 'テーマとタイトルは必須です' }, 400);
     }
 
-    // Claude APIでコラムを生成
-    const columnData = await generateColumn(c.env.CLAUDE_API_KEY, theme, title, websiteInfo);
+    // AI Providerを取得してコラムを生成
+    const provider = getProviderFromEnv(c.env.AI_PROVIDER);
+    const aiProvider = getAIProvider(provider, c.env.CLAUDE_API_KEY);
+    const columnData = await aiProvider.generateColumn(theme, title, websiteInfo);
 
     // メタディスクリプションを生成
     const metaDescription = generateMetaDescription(columnData.introduction);
@@ -113,7 +119,7 @@ column.post('/generate-column', async (c) => {
     const keywords = extractKeywords(fullText, 5);
     columnData.keywords = keywords;
 
-    return c.json({ success: true, column: columnData });
+    return c.json({ success: true, column: columnData, provider });
   } catch (error) {
     console.error('Column generation error:', error);
     return c.json({ 

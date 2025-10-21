@@ -167,10 +167,16 @@ app.get('/', (c) => {
 
             <!-- ステップ1: テーマ入力 -->
             <div id="themeStep" class="bg-white rounded-xl shadow-lg p-8 card">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">
-                    <i class="fas fa-lightbulb mr-2 text-yellow-500"></i>
-                    コラムのテーマを入力
-                </h2>
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">
+                        <i class="fas fa-lightbulb mr-2 text-yellow-500"></i>
+                        コラムのテーマを入力
+                    </h2>
+                    <div id="aiProviderBadge" class="px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                        <i class="fas fa-robot mr-2"></i>
+                        <span id="currentProvider">GenSpark AI (無料)</span>
+                    </div>
+                </div>
                 
                 <div class="space-y-6">
                     <div>

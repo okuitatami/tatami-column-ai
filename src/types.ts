@@ -1,7 +1,11 @@
+// AI Provider型
+export type AIProvider = 'genspark' | 'claude';
+
 // 環境変数とバインディングの型定義
 export type Bindings = {
   DB: D1Database;
-  CLAUDE_API_KEY: string;
+  CLAUDE_API_KEY?: string;
+  AI_PROVIDER?: string;
   SESSION_SECRET: string;
 }
 

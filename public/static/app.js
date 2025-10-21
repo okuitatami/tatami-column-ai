@@ -199,6 +199,7 @@ async function generateTitles() {
         
         if (response.ok) {
             titleCandidates = data.titles;
+            updateProviderBadge(data.provider);
             showTitleStep();
         } else {
             alert(data.error || 'タイトル候補の生成に失敗しました');
@@ -271,6 +272,7 @@ async function generateColumnFromTitle() {
         
         if (response.ok) {
             currentColumn = data.column;
+            updateProviderBadge(data.provider);
             showColumnStep();
         } else {
             alert(data.error || 'コラムの生成に失敗しました');
@@ -685,4 +687,20 @@ function resetSteps() {
     document.getElementById('titleStep').classList.add('hidden');
     document.getElementById('columnStep').classList.add('hidden');
     updateStepIndicator(1);
+}
+
+// AIプロバイダーバッジを更新
+function updateProviderBadge(provider) {
+    const badge = document.getElementById('aiProviderBadge');
+    const providerText = document.getElementById('currentProvider');
+    
+    if (!badge || !providerText) return;
+    
+    if (provider === 'claude') {
+        badge.className = 'px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium';
+        providerText.innerHTML = '<i class="fas fa-robot mr-2"></i>Claude AI (高品質)';
+    } else {
+        badge.className = 'px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium';
+        providerText.innerHTML = '<i class="fas fa-robot mr-2"></i>GenSpark AI (無料)';
+    }
 }

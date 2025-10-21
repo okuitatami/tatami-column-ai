@@ -12,5 +12,13 @@
       "database_name": "webapp-production",
       "database_id": "00000000-0000-0000-0000-000000000000"
     }
-  ]
+  ],
+  // 環境変数の設定（本番環境用）
+  // ローカル開発は.dev.varsファイルを使用
+  // 本番環境: wrangler pages secret put AI_PROVIDER --project-name webapp
+  // 本番環境: wrangler pages secret put SESSION_SECRET --project-name webapp
+  // Claudeを使う場合: wrangler pages secret put CLAUDE_API_KEY --project-name webapp
+  "vars": {
+    "AI_PROVIDER": "genspark"
+  }
 }
