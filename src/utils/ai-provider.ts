@@ -11,16 +11,22 @@ export interface AIProviderInterface {
 
 // GenSpark AI Provider実装
 class GenSparkProvider implements AIProviderInterface {
+  private apiKey: string;
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
   async generateTitles(theme: string, websiteInfo?: WebsiteAnalysis): Promise<TitleCandidate[]> {
-    return await genspark.generateTitles(theme, websiteInfo);
+    return await genspark.generateTitles(theme, websiteInfo, this.apiKey);
   }
 
   async generateColumn(theme: string, selectedTitle: string, websiteInfo?: WebsiteAnalysis): Promise<ColumnStructure> {
-    return await genspark.generateColumn(theme, selectedTitle, websiteInfo);
+    return await genspark.generateColumn(theme, selectedTitle, websiteInfo, this.apiKey);
   }
 
   async analyzeWebsite(url: string, htmlContent: string): Promise<WebsiteAnalysis> {
-    return await genspark.analyzeWebsite(url, htmlContent);
+    return await genspark.analyzeWebsite(url, htmlContent, this.apiKey);
   }
 }
 
@@ -46,15 +52,18 @@ class ClaudeProvider implements AIProviderInterface {
 }
 
 // プロバイダーファクトリー
-export function getAIProvider(provider: AIProvider, apiKey?: string): AIProviderInterface {
+export function getAIProvider(provider: AIProvider, openaiKey?: string, claudeKey?: string): AIProviderInterface {
   switch (provider) {
     case 'genspark':
-      return new GenSparkProvider();
+      if (!openaiKey) {
+        throw new Error('OpenAI API key is required when using GenSpark provider. Please set OPENAI_API_KEY in .dev.vars');
+      }
+      return new GenSparkProvider(openaiKey);
     case 'claude':
-      if (!apiKey) {
+      if (!claudeKey) {
         throw new Error('Claude API key is required when using Claude provider');
       }
-      return new ClaudeProvider(apiKey);
+      return new ClaudeProvider(claudeKey);
     default:
       throw new Error(`Unknown AI provider: ${provider}`);
   }

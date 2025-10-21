@@ -50,7 +50,7 @@ column.post('/analyze-website', async (c) => {
 
     // AI Providerを取得してウェブサイトを解析
     const provider = getProviderFromEnv(c.env.AI_PROVIDER);
-    const aiProvider = getAIProvider(provider, c.env.CLAUDE_API_KEY);
+    const aiProvider = getAIProvider(provider, c.env.OPENAI_API_KEY, c.env.CLAUDE_API_KEY);
     const analysis = await aiProvider.analyzeWebsite(url, html);
 
     return c.json({ success: true, analysis });
@@ -74,7 +74,7 @@ column.post('/generate-titles', async (c) => {
 
     // AI Providerを取得してタイトル候補を生成
     const provider = getProviderFromEnv(c.env.AI_PROVIDER);
-    const aiProvider = getAIProvider(provider, c.env.CLAUDE_API_KEY);
+    const aiProvider = getAIProvider(provider, c.env.OPENAI_API_KEY, c.env.CLAUDE_API_KEY);
     const titles = await aiProvider.generateTitles(theme, websiteInfo);
 
     return c.json({ success: true, titles, provider });
@@ -98,7 +98,7 @@ column.post('/generate-column', async (c) => {
 
     // AI Providerを取得してコラムを生成
     const provider = getProviderFromEnv(c.env.AI_PROVIDER);
-    const aiProvider = getAIProvider(provider, c.env.CLAUDE_API_KEY);
+    const aiProvider = getAIProvider(provider, c.env.OPENAI_API_KEY, c.env.CLAUDE_API_KEY);
     const columnData = await aiProvider.generateColumn(theme, title, websiteInfo);
 
     // メタディスクリプションを生成
