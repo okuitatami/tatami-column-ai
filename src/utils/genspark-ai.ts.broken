@@ -46,54 +46,47 @@ async function simulateAIResponse(prompt: string, keywords?: string[], searchCon
   throw new Error('サポートされていないリクエストです');
 }
 
-// タイトル生成のレスポンス（キーワード+地域ベース、バリエーション豊富）
+// タイトル生成のレスポンス（キーワードベース、バリエーション豊富）
 function generateTitleResponse(prompt: string, keywords?: string[], searchContext?: string): string {
   const theme = keywords && keywords.length > 0 ? keywords.join('・') : 'お悩み解決';
   const mainKeyword = keywords && keywords.length > 0 ? keywords[0] : 'お悩み';
   const subKeywords = keywords && keywords.length > 1 ? keywords.slice(1) : [];
   
-  // 地域情報を抽出
-  const regionMatch = prompt.match(/地域:\s*(.+?)(?:\n|$)/);
-  const regions = regionMatch ? regionMatch[1].split('、') : [];
-  const regionText = regions.length > 0 ? `【${regions[0]}】` : '';
-  const regionPrefix = regions.length > 0 ? `${regions[0]}で` : '';
-  const regionSuffix = regions.length > 0 ? `｜${regions[0]}対応` : '';
-  
   const patterns = [
     [
-      `${regionText}${theme}の完全ガイド｜プロが教える実践テクニック`,
-      `${theme}徹底解説｜${regionPrefix}専門家が語る成功の秘訣`,
-      `${regionText}${mainKeyword}の${subKeywords[0] || '対策'}完全マニュアル｜失敗しない方法`,
-      `【保存版】${regionPrefix}${theme}の全知識｜基礎から応用まで`,
-      `${mainKeyword}専門家が教える${subKeywords[0] || '解決法'}完全ガイド${regionSuffix}`
+      `${theme}の完全ガイド｜プロが教える実践テクニック`,
+      `${theme}徹底解説｜専門家が語る成功の秘訣`,
+      `${mainKeyword}の${subKeywords[0] || '対策'}完全マニュアル｜失敗しない方法`,
+      `【保存版】${theme}の全知識｜基礎から応用まで`,
+      `${mainKeyword}専門家が教える${subKeywords[0] || '解決法'}完全ガイド`
     ],
     [
-      `【2024年最新】${regionText}${theme}｜効果的な5つの実践ステップ`,
-      `今すぐ実践！${regionPrefix}${mainKeyword}の${subKeywords[0] || '対策'}7つのポイント`,
-      `${regionText}${theme}の正しい手順｜プロが実践する3つの方法`,
-      `最新版！${regionPrefix}${mainKeyword}における${subKeywords[0] || '重要'}ポイント徹底解説`,
-      `${theme}｜${regionPrefix}成功率を上げる実践的アプローチ`
+      `【2024年最新】${theme}｜効果的な5つの実践ステップ`,
+      `今すぐ実践！${mainKeyword}の${subKeywords[0] || '対策'}7つのポイント`,
+      `${theme}の正しい手順｜プロが実践する3つの方法`,
+      `最新版！${mainKeyword}における${subKeywords[0] || '重要'}ポイント徹底解説`,
+      `${theme}｜成功率を上げる実践的アプローチ`
     ],
     [
-      `${regionText}${mainKeyword}の${subKeywords[0] || '悩み'}を解決｜専門家が教える対処法`,
-      `${regionPrefix}${theme}でよくある失敗と対策｜プロの解決事例`,
-      `${mainKeyword}トラブル完全対応｜${regionPrefix}${subKeywords[0] || '問題'}解決マニュアル`,
-      `${regionText}知らないと損する${theme}の重要知識`,
-      `${mainKeyword}専門家が警告｜${regionPrefix}${subKeywords[0] || '注意'}すべき5つのポイント`
+      `${mainKeyword}の${subKeywords[0] || '悩み'}を解決｜専門家が教える対処法`,
+      `${theme}でよくある失敗と対策｜プロの解決事例`,
+      `${mainKeyword}トラブル完全対応｜${subKeywords[0] || '問題'}解決マニュアル`,
+      `知らないと損する${theme}の重要知識`,
+      `${mainKeyword}専門家が警告｜${subKeywords[0] || '注意'}すべき5つのポイント`
     ],
     [
-      `${regionText}${theme}の正しい選び方｜失敗しないための判断基準`,
-      `${regionPrefix}${mainKeyword}の${subKeywords[0] || '方法'}比較｜メリット・デメリット徹底分析`,
-      `${regionText}プロが選ぶ${theme}｜おすすめの理由と注意点`,
-      `${mainKeyword}における${subKeywords[0] || '選択'}｜${regionPrefix}専門家の判断基準`,
-      `${theme}｜${regionPrefix}費用対効果を最大化する選び方`
+      `${theme}の正しい選び方｜失敗しないための判断基準`,
+      `${mainKeyword}の${subKeywords[0] || '方法'}比較｜メリット・デメリット徹底分析`,
+      `プロが選ぶ${theme}｜おすすめの理由と注意点`,
+      `${mainKeyword}における${subKeywords[0] || '選択'}｜専門家の判断基準`,
+      `${theme}｜費用対効果を最大化する選び方`
     ],
     [
-      `【専門家監修】${regionText}${theme}の科学的根拠と実践方法`,
-      `${mainKeyword}のメカニズム解説｜${regionPrefix}${subKeywords[0] || '効果'}を最大化する技術`,
-      `${regionText}業界のプロが明かす${theme}の真実`,
-      `${mainKeyword}の最新研究から見る${subKeywords[0] || '対策'}法${regionSuffix}`,
-      `徹底検証！${regionPrefix}${theme}｜本当に効果的な方法とは`
+      `【専門家監修】${theme}の科学的根拠と実践方法`,
+      `${mainKeyword}のメカニズム解説｜${subKeywords[0] || '効果'}を最大化する技術`,
+      `業界のプロが明かす${theme}の真実`,
+      `${mainKeyword}の最新研究から見る${subKeywords[0] || '対策'}法`,
+      `徹底検証！${theme}｜本当に効果的な方法とは`
     ]
   ];
   
@@ -121,22 +114,27 @@ function getDescriptionForPattern(patternIndex: number): string {
 }
 
 // コラム生成のレスポンス（キーワードベース、3000文字以上）
+// プロンプトから完全にAIが自由に見出しと内容を生成
 function generateColumnResponse(prompt: string, keywords?: string[], searchContext?: string): string {
   const titleMatch = prompt.match(/タイトル:\s*(.+)/);
   const title = titleMatch ? titleMatch[1].split('\n')[0].trim() : 'コラム';
   
-  const mainKeyword = keywords && keywords.length > 0 ? keywords[0] : 'お悩み';
-  const subKeywords = keywords && keywords.length > 1 ? keywords.slice(1) : [];
-  const allKeywords = keywords && keywords.length > 0 ? keywords.join('、') : mainKeyword;
+  const allKeywords = keywords && keywords.length > 0 ? keywords.join('、') : 'お悩み解決';
   
-  // 導入文（350-400文字）
-  const introduction = `${mainKeyword}に関して${subKeywords[0] ? `、特に${subKeywords[0]}の観点から` : ''}、多くの方が疑問や不安を抱えていらっしゃるのではないでしょうか。この分野は専門的な知識が必要とされ、正しい情報を得ることが重要です。
+  // プロンプトに基づいてAIが自由に生成する構造
+  // タイトルとキーワードから、見出しと内容を動的に生成
+  // 固定パターンを使わず、コンテンツの多様性を確保
+  
+  const keywordList = allKeywords.split('、');
+  const primaryKeyword = keywordList[0] || 'テーマ';
+  
+  // 導入文 - タイトルに即した自然な導入
+  const introduction = `${allKeywords}について、「${title}」をテーマに詳しく解説します。
 
-本記事では、${allKeywords}について、業界の専門家や実務経験者の知見を基に、科学的根拠と実践的なアプローチの両面から詳しく解説していきます。初心者の方にも理解しやすいよう、基礎知識から最新のトレンド、実践的なテクニックまで、段階的に説明していきますので、ぜひ最後までご覧ください。`;
+この記事では、専門家の視点と最新の情報をもとに、実践的で役立つ知識をお届けします。${primaryKeyword}に関する基礎から応用まで、段階的に理解を深めていただける内容となっていますので、ぜひ参考にしてください。`;
 
-  // セクション1: 基礎知識と重要性（600-700文字）
-  const section1 = {
-    heading: `${mainKeyword}とは？基礎知識と重要性`,
+  // 5つのセクション - タイトルとキーワードから自由に生成
+  const sections = generateDynamicSections(title, keywordList);
     content: `まず、${mainKeyword}の基本的な定義と、なぜこれが重要なのかについて理解を深めましょう。
 
 ${mainKeyword}は、${subKeywords[0] ? `${subKeywords[0]}を含む` : ''}様々な要素が複合的に関わる重要なテーマです。近年の研究や実務経験から、適切な対応を行うことで、長期的に大きな効果が得られることが明らかになっています。
@@ -382,7 +380,6 @@ function generateWebsiteAnalysisResponse(prompt: string): string {
 // タイトル候補を生成
 export async function generateTitles(
   keywords: string[],
-  regions: string[],
   websiteInfo?: WebsiteAnalysis,
   apiKey?: string
 ): Promise<TitleCandidate[]> {
@@ -390,14 +387,9 @@ export async function generateTitles(
     ? `\n\n参考情報：このコラムは以下のウェブサイト向けです：\n- サイト名: ${websiteInfo.title || '不明'}\n- 説明: ${websiteInfo.description || '不明'}\n- 特徴: ${websiteInfo.features?.join(', ') || '不明'}\n- 強み: ${websiteInfo.strengths?.join(', ') || '不明'}`
     : '';
 
-  // 地域情報が指定されている場合は地域SEOに最適化
-  const regionContext = regions && regions.length > 0
-    ? `\n地域: ${regions.join('、')}\n\n※地域名をタイトルに含めて、地域SEOに最適化してください。`
-    : '';
+  const prompt = `打ち込まれたキーワード（${keywords.length}個）を反映して、SEO的に有利なコラムタイトルを5つ生成してください。
 
-  const prompt = `打ち込まれたキーワード（${keywords.length}個）${regions && regions.length > 0 ? `と地域（${regions.length}個）` : ''}を反映して、SEO的に有利なコラムタイトルを5つ生成してください。
-
-キーワード: ${keywords.join('、')}${regionContext}${websiteContext}`;
+キーワード: ${keywords.join('、')}${websiteContext}`;
 
   try {
     const response = await generateWithGenSparkAI(prompt, keywords);
@@ -421,7 +413,6 @@ export async function generateTitles(
 // コラムを生成
 export async function generateColumn(
   keywords: string[],
-  regions: string[],
   selectedTitle: string,
   websiteInfo?: WebsiteAnalysis,
   apiKey?: string
@@ -430,14 +421,9 @@ export async function generateColumn(
     ? `\n\n【重要】事前に解析したURLの情報：\n- URL: ${websiteInfo.url || ''}\n- サイト名: ${websiteInfo.title || '不明'}\n- 説明: ${websiteInfo.description || '不明'}\n- 主要コンテンツ: ${websiteInfo.mainContent || '不明'}\n- 特徴: ${websiteInfo.features?.join(', ') || '不明'}\n- 強み: ${websiteInfo.strengths?.join(', ') || '不明'}\n\n内容の各所に、上記URLの強みや特色を入れ込み、コラムでありつつそのURLの企業のPR内容にもなるように作成してください。`
     : '';
 
-  // 地域情報が指定されている場合は地域SEOに最適化
-  const regionContext = regions && regions.length > 0
-    ? `\n地域: ${regions.join('、')}\n\n※地域に関連する情報（地域の特性、地域特有のニーズ、地域での事例など）を盛り込み、地域SEOに最適化してください。`
-    : '';
-
   const prompt = `選択されたタイトルを基に3000文字程度のSEO的に有利な文章を生成してください。
 
-キーワード: ${keywords.join('、')}${regionContext}
+キーワード: ${keywords.join('、')}
 タイトル: ${selectedTitle}${websiteContext}
 
 文章構成は以下の通りです：

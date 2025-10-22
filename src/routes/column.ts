@@ -66,7 +66,7 @@ column.post('/analyze-website', async (c) => {
 // タイトル候補を生成
 column.post('/generate-titles', async (c) => {
   try {
-    const { keywords, websiteInfo } = await c.req.json();
+    const { keywords, regions, websiteInfo } = await c.req.json();
 
     if (!keywords || !Array.isArray(keywords) || keywords.length < 2) {
       return c.json({ error: 'キーワードを最低2つ入力してください' }, 400);
@@ -74,11 +74,16 @@ column.post('/generate-titles', async (c) => {
 
     // スペース削除と空要素フィルタリング
     const cleanedKeywords = keywords.map((k: string) => k.trim().replace(/\s+/g, '')).filter((k: string) => k);
+    
+    // 地域情報も同様に処理（任意なので空配列でもOK）
+    const cleanedRegions = regions && Array.isArray(regions) 
+      ? regions.map((r: string) => r.trim().replace(/\s+/g, '')).filter((r: string) => r)
+      : [];
 
-    // AI Providerを取得してタイトル候補を生成
+    // AI Providerを取得してタイトル候補を生成（地域情報も渡す）
     const provider = getProviderFromEnv(c.env.AI_PROVIDER);
     const aiProvider = getAIProvider(provider, c.env.OPENAI_API_KEY, c.env.CLAUDE_API_KEY);
-    const titles = await aiProvider.generateTitles(cleanedKeywords, websiteInfo);
+    const titles = await aiProvider.generateTitles(cleanedKeywords, cleanedRegions, websiteInfo);
 
     return c.json({ success: true, titles, provider });
   } catch (error) {
@@ -93,7 +98,7 @@ column.post('/generate-titles', async (c) => {
 // コラムを生成
 column.post('/generate-column', async (c) => {
   try {
-    const { keywords, title, websiteInfo } = await c.req.json();
+    const { keywords, regions, title, websiteInfo } = await c.req.json();
 
     if (!keywords || !Array.isArray(keywords) || keywords.length < 2 || !title) {
       return c.json({ error: 'キーワード（最低2つ）とタイトルは必須です' }, 400);
@@ -101,11 +106,16 @@ column.post('/generate-column', async (c) => {
 
     // スペース削除と空要素フィルタリング
     const cleanedKeywords = keywords.map((k: string) => k.trim().replace(/\s+/g, '')).filter((k: string) => k);
+    
+    // 地域情報も同様に処理（任意なので空配列でもOK）
+    const cleanedRegions = regions && Array.isArray(regions) 
+      ? regions.map((r: string) => r.trim().replace(/\s+/g, '')).filter((r: string) => r)
+      : [];
 
-    // AI Providerを取得してコラムを生成
+    // AI Providerを取得してコラムを生成（地域情報も渡す）
     const provider = getProviderFromEnv(c.env.AI_PROVIDER);
     const aiProvider = getAIProvider(provider, c.env.OPENAI_API_KEY, c.env.CLAUDE_API_KEY);
-    const columnData = await aiProvider.generateColumn(cleanedKeywords, title, websiteInfo);
+    const columnData = await aiProvider.generateColumn(cleanedKeywords, cleanedRegions, title, websiteInfo);
 
     // メタディスクリプションを生成
     const metaDescription = generateMetaDescription(columnData.introduction);

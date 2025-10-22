@@ -212,6 +212,30 @@ app.get('/', (c) => {
                     </div>
                     
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            <i class="fas fa-map-marker-alt mr-2"></i>地域入力（1〜3個、任意）
+                        </label>
+                        <p class="mb-4 text-sm text-gray-600 bg-green-50 p-3 rounded-lg">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            地域を指定すると、地域SEOに最適化されたコンテンツを生成します。（例: 東京都、渋谷区、新宿）
+                        </p>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                                <input type="text" id="region1" placeholder="地域1（任意）例: 東京都" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <input type="text" id="region2" placeholder="地域2（任意）例: 渋谷区" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <input type="text" id="region3" placeholder="地域3（任意）例: 新宿" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             ウェブサイトURL（任意）
                             <span class="text-xs text-gray-500 ml-2">※サイトの特徴を反映します</span>

@@ -189,8 +189,17 @@ async function generateTitles() {
         return;
     }
     
+    // 地域情報を収集（スペース削除、任意）
+    const regions = [];
+    for (let i = 1; i <= 3; i++) {
+        const region = document.getElementById(`region${i}`).value.trim().replace(/\s+/g, '');
+        if (region) {
+            regions.push(region);
+        }
+    }
+    
     try {
-        showLoading('キーワードを分析してタイトル候補を生成中... (30秒程度かかります)');
+        showLoading(`キーワード${regions.length > 0 ? '・地域' : ''}を分析してタイトル候補を生成中... (30秒程度かかります)`);
         
         const response = await fetch('/api/column/generate-titles', {
             method: 'POST',
@@ -198,6 +207,7 @@ async function generateTitles() {
             credentials: 'include',
             body: JSON.stringify({ 
                 keywords,
+                regions,
                 websiteInfo: websiteAnalysis 
             })
         });
@@ -232,10 +242,16 @@ function showTitleStep() {
     titleCandidates.forEach(title => {
         const div = document.createElement('div');
         div.className = 'p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition';
+        div.onclick = function() {
+            // ラジオボタンを選択
+            const radio = this.querySelector('input[type="radio"]');
+            radio.checked = true;
+            selectTitle(title.id);
+        };
         div.innerHTML = `
             <div class="flex items-start">
                 <input type="radio" name="title" value="${title.id}" class="mt-1 mr-3" 
-                    onchange="selectTitle('${title.id}')">
+                    onchange="event.stopPropagation(); selectTitle('${title.id}')">
                 <div class="flex-1">
                     <h4 class="font-bold text-lg text-gray-800 mb-2">${title.title}</h4>
                     <p class="text-sm text-gray-600">${title.description}</p>
@@ -268,8 +284,17 @@ async function generateColumnFromTitle() {
         }
     }
     
+    // 地域情報を収集（スペース削除、任意）
+    const regions = [];
+    for (let i = 1; i <= 3; i++) {
+        const region = document.getElementById(`region${i}`).value.trim().replace(/\s+/g, '');
+        if (region) {
+            regions.push(region);
+        }
+    }
+    
     try {
-        showLoading('専門的なコラムを生成中... (60秒程度かかります)');
+        showLoading(`専門的なコラム${regions.length > 0 ? '（地域最適化）' : ''}を生成中... (60秒程度かかります)`);
         
         const response = await fetch('/api/column/generate-column', {
             method: 'POST',
@@ -277,6 +302,7 @@ async function generateColumnFromTitle() {
             credentials: 'include',
             body: JSON.stringify({ 
                 keywords,
+                regions,
                 title: selectedTitle.title,
                 websiteInfo: websiteAnalysis 
             })

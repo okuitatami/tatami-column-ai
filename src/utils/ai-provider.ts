@@ -4,19 +4,19 @@ import * as genspark from './genspark-ai';
 
 // AI Provider統一インターフェース
 export interface AIProviderInterface {
-  generateTitles(keywords: string[], websiteInfo?: WebsiteAnalysis): Promise<TitleCandidate[]>;
-  generateColumn(keywords: string[], selectedTitle: string, websiteInfo?: WebsiteAnalysis): Promise<ColumnStructure>;
+  generateTitles(keywords: string[], regions: string[], websiteInfo?: WebsiteAnalysis): Promise<TitleCandidate[]>;
+  generateColumn(keywords: string[], regions: string[], selectedTitle: string, websiteInfo?: WebsiteAnalysis): Promise<ColumnStructure>;
   analyzeWebsite(url: string, htmlContent: string): Promise<WebsiteAnalysis>;
 }
 
-// GenSpark AI Provider実装（完全無料、キーワードベース）
+// GenSpark AI Provider実装（完全無料、キーワード+地域ベース）
 class GenSparkProvider implements AIProviderInterface {
-  async generateTitles(keywords: string[], websiteInfo?: WebsiteAnalysis): Promise<TitleCandidate[]> {
-    return await genspark.generateTitles(keywords, websiteInfo);
+  async generateTitles(keywords: string[], regions: string[], websiteInfo?: WebsiteAnalysis): Promise<TitleCandidate[]> {
+    return await genspark.generateTitles(keywords, regions, websiteInfo);
   }
 
-  async generateColumn(keywords: string[], selectedTitle: string, websiteInfo?: WebsiteAnalysis): Promise<ColumnStructure> {
-    return await genspark.generateColumn(keywords, selectedTitle, websiteInfo);
+  async generateColumn(keywords: string[], regions: string[], selectedTitle: string, websiteInfo?: WebsiteAnalysis): Promise<ColumnStructure> {
+    return await genspark.generateColumn(keywords, regions, selectedTitle, websiteInfo);
   }
 
   async analyzeWebsite(url: string, htmlContent: string): Promise<WebsiteAnalysis> {
@@ -32,12 +32,12 @@ class ClaudeProvider implements AIProviderInterface {
     this.apiKey = apiKey;
   }
 
-  async generateTitles(theme: string, websiteInfo?: WebsiteAnalysis): Promise<TitleCandidate[]> {
-    return await claude.generateTitles(this.apiKey, theme, websiteInfo);
+  async generateTitles(keywords: string[], regions: string[], websiteInfo?: WebsiteAnalysis): Promise<TitleCandidate[]> {
+    return await claude.generateTitles(this.apiKey, keywords, regions, websiteInfo);
   }
 
-  async generateColumn(theme: string, selectedTitle: string, websiteInfo?: WebsiteAnalysis): Promise<ColumnStructure> {
-    return await claude.generateColumn(this.apiKey, theme, selectedTitle, websiteInfo);
+  async generateColumn(keywords: string[], regions: string[], selectedTitle: string, websiteInfo?: WebsiteAnalysis): Promise<ColumnStructure> {
+    return await claude.generateColumn(this.apiKey, keywords, regions, selectedTitle, websiteInfo);
   }
 
   async analyzeWebsite(url: string, htmlContent: string): Promise<WebsiteAnalysis> {
