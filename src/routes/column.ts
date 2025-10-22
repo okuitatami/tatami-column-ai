@@ -66,16 +66,19 @@ column.post('/analyze-website', async (c) => {
 // タイトル候補を生成
 column.post('/generate-titles', async (c) => {
   try {
-    const { theme, websiteInfo } = await c.req.json();
+    const { keywords, websiteInfo } = await c.req.json();
 
-    if (!theme) {
-      return c.json({ error: 'テーマは必須です' }, 400);
+    if (!keywords || !Array.isArray(keywords) || keywords.length < 2) {
+      return c.json({ error: 'キーワードを最低2つ入力してください' }, 400);
     }
+
+    // スペース削除と空要素フィルタリング
+    const cleanedKeywords = keywords.map((k: string) => k.trim().replace(/\s+/g, '')).filter((k: string) => k);
 
     // AI Providerを取得してタイトル候補を生成
     const provider = getProviderFromEnv(c.env.AI_PROVIDER);
     const aiProvider = getAIProvider(provider, c.env.OPENAI_API_KEY, c.env.CLAUDE_API_KEY);
-    const titles = await aiProvider.generateTitles(theme, websiteInfo);
+    const titles = await aiProvider.generateTitles(cleanedKeywords, websiteInfo);
 
     return c.json({ success: true, titles, provider });
   } catch (error) {
@@ -90,16 +93,19 @@ column.post('/generate-titles', async (c) => {
 // コラムを生成
 column.post('/generate-column', async (c) => {
   try {
-    const { theme, title, websiteInfo } = await c.req.json();
+    const { keywords, title, websiteInfo } = await c.req.json();
 
-    if (!theme || !title) {
-      return c.json({ error: 'テーマとタイトルは必須です' }, 400);
+    if (!keywords || !Array.isArray(keywords) || keywords.length < 2 || !title) {
+      return c.json({ error: 'キーワード（最低2つ）とタイトルは必須です' }, 400);
     }
+
+    // スペース削除と空要素フィルタリング
+    const cleanedKeywords = keywords.map((k: string) => k.trim().replace(/\s+/g, '')).filter((k: string) => k);
 
     // AI Providerを取得してコラムを生成
     const provider = getProviderFromEnv(c.env.AI_PROVIDER);
     const aiProvider = getAIProvider(provider, c.env.OPENAI_API_KEY, c.env.CLAUDE_API_KEY);
-    const columnData = await aiProvider.generateColumn(theme, title, websiteInfo);
+    const columnData = await aiProvider.generateColumn(cleanedKeywords, title, websiteInfo);
 
     // メタディスクリプションを生成
     const metaDescription = generateMetaDescription(columnData.introduction);
@@ -115,9 +121,9 @@ column.post('/generate-column', async (c) => {
       ...columnData.qa.map(q => q.question + ' ' + q.answer)
     ].join(' ');
 
-    // キーワードを抽出
-    const keywords = extractKeywords(fullText, 5);
-    columnData.keywords = keywords;
+    // 入力キーワードを最優先で設定し、残りを本文から抽出
+    const extractedKeywords = extractKeywords(fullText, 3);
+    columnData.keywords = [...cleanedKeywords, ...extractedKeywords].slice(0, 5);
 
     return c.json({ success: true, column: columnData, provider });
   } catch (error) {

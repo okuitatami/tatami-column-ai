@@ -174,19 +174,41 @@ app.get('/', (c) => {
                     </h2>
                     <div id="aiProviderBadge" class="px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium">
                         <i class="fas fa-robot mr-2"></i>
-                        <span id="currentProvider">GenSpark AI (無料)</span>
+                        <span id="currentProvider">GenSpark AI</span>
                     </div>
                 </div>
                 
                 <div class="space-y-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">テーマ</label>
-                        <input type="text" id="theme" placeholder="例: 畳の張り替え時期の見極め方" 
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                        <p class="mt-2 text-sm text-gray-500">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            <i class="fas fa-tags mr-2"></i>キーワード入力（2〜5個）
+                        </label>
+                        <p class="mb-4 text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
                             <i class="fas fa-info-circle mr-1"></i>
-                            キーワード例: 畳、襖、障子、和室リフォーム、内装工事など
+                            各欄に重要なキーワードを1つずつ入力してください。これらのキーワードを基に専門的なコラムを生成します。
                         </p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <input type="text" id="keyword1" placeholder="キーワード1（必須）例: 畳" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <input type="text" id="keyword2" placeholder="キーワード2（必須）例: カビ対策" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <input type="text" id="keyword3" placeholder="キーワード3（任意）例: 梅雨" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <input type="text" id="keyword4" placeholder="キーワード4（任意）例: 予防" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            </div>
+                            <div class="md:col-span-2">
+                                <input type="text" id="keyword5" placeholder="キーワード5（任意）例: メンテナンス" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            </div>
+                        </div>
                     </div>
                     
                     <div>

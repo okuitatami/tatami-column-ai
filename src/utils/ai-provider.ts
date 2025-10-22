@@ -4,29 +4,23 @@ import * as genspark from './genspark-ai';
 
 // AI Provider統一インターフェース
 export interface AIProviderInterface {
-  generateTitles(theme: string, websiteInfo?: WebsiteAnalysis): Promise<TitleCandidate[]>;
-  generateColumn(theme: string, selectedTitle: string, websiteInfo?: WebsiteAnalysis): Promise<ColumnStructure>;
+  generateTitles(keywords: string[], websiteInfo?: WebsiteAnalysis): Promise<TitleCandidate[]>;
+  generateColumn(keywords: string[], selectedTitle: string, websiteInfo?: WebsiteAnalysis): Promise<ColumnStructure>;
   analyzeWebsite(url: string, htmlContent: string): Promise<WebsiteAnalysis>;
 }
 
-// GenSpark AI Provider実装
+// GenSpark AI Provider実装（完全無料、キーワードベース）
 class GenSparkProvider implements AIProviderInterface {
-  private apiKey: string;
-
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
+  async generateTitles(keywords: string[], websiteInfo?: WebsiteAnalysis): Promise<TitleCandidate[]> {
+    return await genspark.generateTitles(keywords, websiteInfo);
   }
 
-  async generateTitles(theme: string, websiteInfo?: WebsiteAnalysis): Promise<TitleCandidate[]> {
-    return await genspark.generateTitles(theme, websiteInfo, this.apiKey);
-  }
-
-  async generateColumn(theme: string, selectedTitle: string, websiteInfo?: WebsiteAnalysis): Promise<ColumnStructure> {
-    return await genspark.generateColumn(theme, selectedTitle, websiteInfo, this.apiKey);
+  async generateColumn(keywords: string[], selectedTitle: string, websiteInfo?: WebsiteAnalysis): Promise<ColumnStructure> {
+    return await genspark.generateColumn(keywords, selectedTitle, websiteInfo);
   }
 
   async analyzeWebsite(url: string, htmlContent: string): Promise<WebsiteAnalysis> {
-    return await genspark.analyzeWebsite(url, htmlContent, this.apiKey);
+    return await genspark.analyzeWebsite(url, htmlContent);
   }
 }
 
@@ -55,10 +49,8 @@ class ClaudeProvider implements AIProviderInterface {
 export function getAIProvider(provider: AIProvider, openaiKey?: string, claudeKey?: string): AIProviderInterface {
   switch (provider) {
     case 'genspark':
-      if (!openaiKey) {
-        throw new Error('OpenAI API key is required when using GenSpark provider. Please set OPENAI_API_KEY in .dev.vars');
-      }
-      return new GenSparkProvider(openaiKey);
+      // GenSparkは完全無料、APIキー不要
+      return new GenSparkProvider();
     case 'claude':
       if (!claudeKey) {
         throw new Error('Claude API key is required when using Claude provider');

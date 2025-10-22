@@ -175,22 +175,29 @@ async function analyzeWebsite() {
 
 // タイトル候補生成
 async function generateTitles() {
-    const theme = document.getElementById('theme').value;
+    // キーワードを収集（スペース削除）
+    const keywords = [];
+    for (let i = 1; i <= 5; i++) {
+        const keyword = document.getElementById(`keyword${i}`).value.trim().replace(/\s+/g, '');
+        if (keyword) {
+            keywords.push(keyword);
+        }
+    }
     
-    if (!theme) {
-        alert('テーマを入力してください');
+    if (keywords.length < 2) {
+        alert('キーワードを最低2つ入力してください');
         return;
     }
     
     try {
-        showLoading('タイトル候補を生成中...');
+        showLoading('キーワードを分析してタイトル候補を生成中... (30秒程度かかります)');
         
         const response = await fetch('/api/column/generate-titles', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify({ 
-                theme,
+                keywords,
                 websiteInfo: websiteAnalysis 
             })
         });
@@ -252,17 +259,24 @@ async function generateColumnFromTitle() {
         return;
     }
     
-    const theme = document.getElementById('theme').value;
+    // キーワードを収集
+    const keywords = [];
+    for (let i = 1; i <= 5; i++) {
+        const keyword = document.getElementById(`keyword${i}`).value.trim().replace(/\s+/g, '');
+        if (keyword) {
+            keywords.push(keyword);
+        }
+    }
     
     try {
-        showLoading('コラムを生成中... (30秒程度かかります)');
+        showLoading('専門的なコラムを生成中... (60秒程度かかります)');
         
         const response = await fetch('/api/column/generate-column', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify({ 
-                theme,
+                keywords,
                 title: selectedTitle.title,
                 websiteInfo: websiteAnalysis 
             })
@@ -701,6 +715,6 @@ function updateProviderBadge(provider) {
         providerText.innerHTML = '<i class="fas fa-robot mr-2"></i>Claude AI (高品質)';
     } else {
         badge.className = 'px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium';
-        providerText.innerHTML = '<i class="fas fa-robot mr-2"></i>GenSpark AI (無料)';
+        providerText.innerHTML = '<i class="fas fa-robot mr-2"></i>GenSpark AI';
     }
 }
