@@ -5,7 +5,7 @@ import * as genspark from './genspark-ai';
 // AI Provider統一インターフェース
 export interface AIProviderInterface {
   generateTitles(keywords: string[], regions: string[], websiteInfo?: WebsiteAnalysis): Promise<TitleCandidate[]>;
-  generateColumn(keywords: string[], regions: string[], selectedTitle: string, websiteInfo?: WebsiteAnalysis): Promise<ColumnStructure>;
+  generateColumn(keywords: string[], regions: string[], selectedTitle: string, targetAudience?: string, websiteInfo?: WebsiteAnalysis): Promise<ColumnStructure>;
   analyzeWebsite(url: string, htmlContent: string): Promise<WebsiteAnalysis>;
 }
 
@@ -15,7 +15,7 @@ class GenSparkProvider implements AIProviderInterface {
     return await genspark.generateTitles(keywords, regions, websiteInfo);
   }
 
-  async generateColumn(keywords: string[], regions: string[], selectedTitle: string, websiteInfo?: WebsiteAnalysis): Promise<ColumnStructure> {
+  async generateColumn(keywords: string[], regions: string[], selectedTitle: string, targetAudience?: string, websiteInfo?: WebsiteAnalysis): Promise<ColumnStructure> {
     return await genspark.generateColumn(keywords, regions, selectedTitle, websiteInfo);
   }
 
@@ -36,8 +36,8 @@ class ClaudeProvider implements AIProviderInterface {
     return await claude.generateTitles(this.apiKey, keywords, regions, websiteInfo);
   }
 
-  async generateColumn(keywords: string[], regions: string[], selectedTitle: string, websiteInfo?: WebsiteAnalysis): Promise<ColumnStructure> {
-    return await claude.generateColumn(this.apiKey, keywords, regions, selectedTitle, websiteInfo);
+  async generateColumn(keywords: string[], regions: string[], selectedTitle: string, targetAudience?: string, websiteInfo?: WebsiteAnalysis): Promise<ColumnStructure> {
+    return await claude.generateColumn(this.apiKey, keywords, regions, selectedTitle, targetAudience, websiteInfo);
   }
 
   async analyzeWebsite(url: string, htmlContent: string): Promise<WebsiteAnalysis> {
@@ -45,8 +45,25 @@ class ClaudeProvider implements AIProviderInterface {
   }
 }
 
-// プロバイダーファクトリー
-export function getAIProvider(provider: AIProvider, openaiKey?: string, claudeKey?: string): AIProviderInterface {
+// プロバイダーファクトリー（Bindingsオブジェクトを受け取るオーバーロード対応）
+export function getAIProvider(provider: AIProvider, envOrOpenaiKey?: any, claudeKey?: string): AIProviderInterface {
+  // envオブジェクト全体が渡された場合
+  if (envOrOpenaiKey && typeof envOrOpenaiKey === 'object' && 'CLAUDE_API_KEY' in envOrOpenaiKey) {
+    const env = envOrOpenaiKey;
+    switch (provider) {
+      case 'genspark':
+        return new GenSparkProvider();
+      case 'claude':
+        if (!env.CLAUDE_API_KEY) {
+          throw new Error('Claude API key is required when using Claude provider');
+        }
+        return new ClaudeProvider(env.CLAUDE_API_KEY);
+      default:
+        throw new Error(`Unknown AI provider: ${provider}`);
+    }
+  }
+  
+  // 従来の引数形式（openaiKey, claudeKey）
   switch (provider) {
     case 'genspark':
       // GenSparkは完全無料、APIキー不要

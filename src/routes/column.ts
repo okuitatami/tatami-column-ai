@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import type { Bindings } from '../types';
 import { getSessionIdFromCookie } from '../utils/auth';
 import { getUserFromSession } from '../utils/db';
-import { getAIProvider, getProviderFromEnv } from '../utils/ai-provider';
+import { getAIClient } from '../lib/gemini-client';
 import { 
   generateMetaDescription, 
   extractKeywords, 
@@ -31,36 +31,9 @@ column.use('*', async (c, next) => {
   await next();
 });
 
-// ウェブサイトを解析
+// ウェブサイトを解析（一時的に無効化）
 column.post('/analyze-website', async (c) => {
-  try {
-    const { url } = await c.req.json();
-
-    if (!url) {
-      return c.json({ error: 'URLは必須です' }, 400);
-    }
-
-    // URLからHTMLを取得
-    const response = await fetch(url);
-    if (!response.ok) {
-      return c.json({ error: 'ウェブサイトの取得に失敗しました' }, 400);
-    }
-
-    const html = await response.text();
-
-    // AI Providerを取得してウェブサイトを解析
-    const provider = getProviderFromEnv(c.env.AI_PROVIDER);
-    const aiProvider = getAIProvider(provider, c.env.OPENAI_API_KEY, c.env.CLAUDE_API_KEY);
-    const analysis = await aiProvider.analyzeWebsite(url, html);
-
-    return c.json({ success: true, analysis });
-  } catch (error) {
-    console.error('Website analysis error:', error);
-    return c.json({ 
-      error: 'ウェブサイトの解析に失敗しました',
-      details: error instanceof Error ? error.message : String(error)
-    }, 500);
-  }
+  return c.json({ error: 'この機能は現在メンテナンス中です' }, 503);
 });
 
 // タイトル候補を生成
@@ -80,12 +53,24 @@ column.post('/generate-titles', async (c) => {
       ? regions.map((r: string) => r.trim().replace(/\s+/g, '')).filter((r: string) => r)
       : [];
 
-    // AI Providerを取得してタイトル候補を生成（地域情報も渡す）
-    const provider = getProviderFromEnv(c.env.AI_PROVIDER);
-    const aiProvider = getAIProvider(provider, c.env.OPENAI_API_KEY, c.env.CLAUDE_API_KEY);
-    const titles = await aiProvider.generateTitles(cleanedKeywords, cleanedRegions, websiteInfo);
+    // Gemini AIクライアントを取得
+    const aiClient = getAIClient(c.env);
+    if (!aiClient) {
+      return c.json({ error: 'AI設定が不正です' }, 500);
+    }
 
-    return c.json({ success: true, titles, provider });
+    // 会社情報を取得
+    const companyInfo = {
+      name: c.env.COMPANY_NAME || '御社',
+      description: c.env.COMPANY_DESCRIPTION || '',
+      strengths: c.env.COMPANY_STRENGTHS?.split(',').map((s: string) => s.trim()) || [],
+      features: c.env.COMPANY_FEATURES?.split(',').map((s: string) => s.trim()) || [],
+    };
+
+    // タイトル候補を生成
+    const titles = await aiClient.generateTitles(cleanedKeywords, cleanedRegions, companyInfo);
+
+    return c.json({ success: true, titles, provider: 'gemini' });
   } catch (error) {
     console.error('Title generation error:', error);
     return c.json({ 
@@ -98,7 +83,7 @@ column.post('/generate-titles', async (c) => {
 // コラムを生成
 column.post('/generate-column', async (c) => {
   try {
-    const { keywords, regions, title, websiteInfo } = await c.req.json();
+    const { keywords, regions, title, targetAudience, websiteInfo } = await c.req.json();
 
     if (!keywords || !Array.isArray(keywords) || keywords.length < 2 || !title) {
       return c.json({ error: 'キーワード（最低2つ）とタイトルは必須です' }, 400);
@@ -112,10 +97,29 @@ column.post('/generate-column', async (c) => {
       ? regions.map((r: string) => r.trim().replace(/\s+/g, '')).filter((r: string) => r)
       : [];
 
-    // AI Providerを取得してコラムを生成（地域情報も渡す）
-    const provider = getProviderFromEnv(c.env.AI_PROVIDER);
-    const aiProvider = getAIProvider(provider, c.env.OPENAI_API_KEY, c.env.CLAUDE_API_KEY);
-    const columnData = await aiProvider.generateColumn(cleanedKeywords, cleanedRegions, title, websiteInfo);
+    // Gemini AIクライアントを取得
+    const aiClient = getAIClient(c.env);
+    if (!aiClient) {
+      return c.json({ error: 'AI設定が不正です' }, 500);
+    }
+
+    // 会社情報を取得
+    const companyInfo = {
+      name: c.env.COMPANY_NAME || '御社',
+      description: c.env.COMPANY_DESCRIPTION || '',
+      strengths: c.env.COMPANY_STRENGTHS?.split(',').map((s: string) => s.trim()) || [],
+      features: c.env.COMPANY_FEATURES?.split(',').map((s: string) => s.trim()) || [],
+      website: c.env.COMPANY_WEBSITE || '',
+    };
+
+    // コラムを生成
+    const columnData = await aiClient.generateColumn(
+      title,
+      cleanedKeywords,
+      cleanedRegions,
+      companyInfo,
+      targetAudience
+    );
 
     // メタディスクリプションを生成
     const metaDescription = generateMetaDescription(columnData.introduction);
@@ -126,8 +130,7 @@ column.post('/generate-column', async (c) => {
       columnData.title,
       columnData.introduction,
       ...columnData.sections.map(s => s.heading + ' ' + s.content),
-      columnData.closing.heading,
-      columnData.closing.content,
+      columnData.closing,
       ...columnData.qa.map(q => q.question + ' ' + q.answer)
     ].join(' ');
 
@@ -135,13 +138,108 @@ column.post('/generate-column', async (c) => {
     const extractedKeywords = extractKeywords(fullText, 3);
     columnData.keywords = [...cleanedKeywords, ...extractedKeywords].slice(0, 5);
 
-    return c.json({ success: true, column: columnData, provider });
+    // コラム履歴を保存
+    const user = c.get('user');
+    if (user) {
+      const { saveColumnHistory } = await import('../utils/db');
+      try {
+        await saveColumnHistory(
+          c.env.DB,
+          user.id,
+          columnData,
+          cleanedKeywords,
+          cleanedRegions,
+          targetAudience
+        );
+      } catch (historyError) {
+        console.error('Failed to save column history:', historyError);
+        // 履歴保存失敗してもコラム生成は成功とする
+      }
+    }
+
+    return c.json({ success: true, column: columnData, provider: 'gemini' });
   } catch (error) {
     console.error('Column generation error:', error);
     return c.json({ 
       error: 'コラムの生成に失敗しました',
       details: error instanceof Error ? error.message : String(error)
     }, 500);
+  }
+});
+
+// コラム履歴を取得
+column.get('/history', async (c) => {
+  try {
+    const user = c.get('user');
+    const { getColumnHistoryByUser } = await import('../utils/db');
+    
+    const limit = parseInt(c.req.query('limit') || '50');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    const history = await getColumnHistoryByUser(c.env.DB, user.id, limit, offset);
+    
+    return c.json({ success: true, history });
+  } catch (error) {
+    console.error('Get history error:', error);
+    return c.json({ error: '履歴の取得に失敗しました' }, 500);
+  }
+});
+
+// コラム履歴を検索
+column.get('/history/search', async (c) => {
+  try {
+    const user = c.get('user');
+    const query = c.req.query('q') || '';
+    
+    if (!query) {
+      return c.json({ error: '検索クエリは必須です' }, 400);
+    }
+    
+    const { searchColumnHistory } = await import('../utils/db');
+    const history = await searchColumnHistory(c.env.DB, user.id, query);
+    
+    return c.json({ success: true, history });
+  } catch (error) {
+    console.error('Search history error:', error);
+    return c.json({ error: '履歴の検索に失敗しました' }, 500);
+  }
+});
+
+// コラム履歴を取得（ID指定）
+column.get('/history/:id', async (c) => {
+  try {
+    const user = c.get('user');
+    const historyId = parseInt(c.req.param('id'));
+    
+    const { getColumnHistoryById, columnHistoryToStructure } = await import('../utils/db');
+    const history = await getColumnHistoryById(c.env.DB, historyId, user.id);
+    
+    if (!history) {
+      return c.json({ error: '履歴が見つかりません' }, 404);
+    }
+    
+    const column = columnHistoryToStructure(history);
+    
+    return c.json({ success: true, history, column });
+  } catch (error) {
+    console.error('Get history by ID error:', error);
+    return c.json({ error: '履歴の取得に失敗しました' }, 500);
+  }
+});
+
+// コラム履歴を削除
+column.delete('/history/:id', async (c) => {
+  try {
+    const user = c.get('user');
+    const historyId = parseInt(c.req.param('id'));
+    
+    const { deleteColumnHistory } = await import('../utils/db');
+    await deleteColumnHistory(c.env.DB, historyId, user.id);
+    
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Delete history error:', error);
+    return c.json({ error: '履歴の削除に失敗しました' }, 500);
   }
 });
 

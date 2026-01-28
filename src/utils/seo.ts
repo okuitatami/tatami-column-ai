@@ -3,20 +3,29 @@ export function countCharacters(text: string): number {
   return text.replace(/\s/g, '').length;
 }
 
-// キーワード密度を計算
-export function calculateKeywordDensity(text: string, keyword: string): number {
-  const normalizedText = text.toLowerCase().replace(/\s+/g, ' ');
-  const normalizedKeyword = keyword.toLowerCase();
+// キーワード密度を計算（単一キーワードまたは配列対応）
+export function calculateKeywordDensity(text: string, keywords: string | string[]): number {
+  // 文字列の場合は配列に変換
+  const keywordArray = Array.isArray(keywords) ? keywords : [keywords];
   
+  const normalizedText = text.toLowerCase().replace(/\s+/g, ' ');
   const totalWords = normalizedText.split(' ').length;
-  const keywordMatches = (normalizedText.match(new RegExp(normalizedKeyword, 'g')) || []).length;
   
   if (totalWords === 0) return 0;
-  return (keywordMatches / totalWords) * 100;
+  
+  // 全キーワードの出現回数を合計
+  let totalMatches = 0;
+  keywordArray.forEach(keyword => {
+    const normalizedKeyword = keyword.toLowerCase();
+    const matches = (normalizedText.match(new RegExp(normalizedKeyword, 'g')) || []).length;
+    totalMatches += matches;
+  });
+  
+  return (totalMatches / totalWords) * 100;
 }
 
 // メタディスクリプションを生成（導入文から120文字）
-export function generateMetaDescription(introduction: string): string {
+export function generateMetaDescription(introduction: string, keywords?: string[]): string {
   const cleaned = introduction.replace(/\s+/g, ' ').trim();
   if (cleaned.length <= 120) return cleaned;
   return cleaned.substring(0, 117) + '...';

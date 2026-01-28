@@ -175,9 +175,15 @@ async function analyzeWebsite() {
 
 // タイトル候補生成
 async function generateTitles() {
+    // 前回の状態をクリア
+    titleCandidates = [];
+    selectedTitle = null;
+    currentColumn = null;
+    websiteAnalysis = null;
+    
     // キーワードを収集（スペース削除）
     const keywords = [];
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 4; i++) {
         const keyword = document.getElementById(`keyword${i}`).value.trim().replace(/\s+/g, '');
         if (keyword) {
             keywords.push(keyword);
@@ -216,7 +222,6 @@ async function generateTitles() {
         
         if (response.ok) {
             titleCandidates = data.titles;
-            updateProviderBadge(data.provider);
             showTitleStep();
         } else {
             alert(data.error || 'タイトル候補の生成に失敗しました');
@@ -275,9 +280,12 @@ async function generateColumnFromTitle() {
         return;
     }
     
+    // 前回のコラムをクリア
+    currentColumn = null;
+    
     // キーワードを収集
     const keywords = [];
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 4; i++) {
         const keyword = document.getElementById(`keyword${i}`).value.trim().replace(/\s+/g, '');
         if (keyword) {
             keywords.push(keyword);
@@ -293,8 +301,15 @@ async function generateColumnFromTitle() {
         }
     }
     
+    // ターゲット層を収集（任意）
+    const targetAudienceRadio = document.querySelector('input[name="targetAudience"]:checked');
+    const targetAudience = targetAudienceRadio ? targetAudienceRadio.value : '';
+    
     try {
-        showLoading(`専門的なコラム${regions.length > 0 ? '（地域最適化）' : ''}を生成中... (60秒程度かかります)`);
+        let loadingMessage = '高品質なコラムを生成中（1/3）...';
+        if (regions.length > 0) loadingMessage = '地域最適化コラムを生成中（1/3）...';
+        if (targetAudience) loadingMessage += ` [${targetAudience}向け]`;
+        showLoading(loadingMessage);
         
         const response = await fetch('/api/column/generate-column', {
             method: 'POST',
@@ -304,6 +319,7 @@ async function generateColumnFromTitle() {
                 keywords,
                 regions,
                 title: selectedTitle.title,
+                targetAudience: targetAudience || undefined,
                 websiteInfo: websiteAnalysis 
             })
         });
@@ -311,15 +327,22 @@ async function generateColumnFromTitle() {
         const data = await response.json();
         
         if (response.ok) {
+            console.log('✅ Column generated successfully:', {
+                title: data.column.title,
+                sectionsCount: data.column.sections.length,
+                qaCount: data.column.qa.length
+            });
             currentColumn = data.column;
-            updateProviderBadge(data.provider);
             showColumnStep();
         } else {
+            console.error('❌ Column generation failed:', data.error);
             alert(data.error || 'コラムの生成に失敗しました');
+            // エラー時は currentColumn を null のまま保持（既にクリア済み）
         }
     } catch (error) {
-        console.error('Column generation error:', error);
+        console.error('❌ Column generation error:', error);
         alert('エラーが発生しました');
+        // エラー時は currentColumn を null のまま保持（既にクリア済み）
     } finally {
         hideLoading();
     }
@@ -327,6 +350,15 @@ async function generateColumnFromTitle() {
 
 // コラム編集ステップを表示
 function showColumnStep() {
+    // currentColumn が存在するか確認
+    if (!currentColumn) {
+        console.error('❌ currentColumn is null! Cannot render column.');
+        alert('コラムデータが見つかりません。もう一度生成してください。');
+        return;
+    }
+    
+    console.log('📝 Rendering column:', currentColumn.title);
+    
     document.getElementById('titleStep').classList.add('hidden');
     document.getElementById('columnStep').classList.remove('hidden');
     
@@ -338,6 +370,14 @@ function showColumnStep() {
 
 // 編集ビューをレンダリング
 function renderEditView() {
+    // currentColumn が存在するか確認
+    if (!currentColumn) {
+        console.error('❌ renderEditView: currentColumn is null!');
+        return;
+    }
+    
+    console.log('📝 renderEditView: Rendering column:', currentColumn.title);
+    
     const editContent = document.getElementById('editContent');
     editContent.innerHTML = '';
     
@@ -711,12 +751,28 @@ function updateStepIndicator(step) {
 
 // ステップ移動
 function backToTheme() {
+    // 前回の状態を完全にクリア
+    currentColumn = null;
+    selectedTitle = null;
+    titleCandidates = [];
+    websiteAnalysis = null;
+    
+    // キーワード入力欄はクリアしない（ユーザーが編集したい場合があるため）
+    
+    // タイトル選択ボタンを無効化
+    document.getElementById('generateColumnBtn').disabled = true;
+    
+    // UIを切り替え
     document.getElementById('titleStep').classList.add('hidden');
     document.getElementById('themeStep').classList.remove('hidden');
     updateStepIndicator(1);
 }
 
 function backToTitles() {
+    // 前回のコラムデータをクリア
+    currentColumn = null;
+    
+    // UIを切り替え
     document.getElementById('columnStep').classList.add('hidden');
     document.getElementById('titleStep').classList.remove('hidden');
     updateStepIndicator(2);
@@ -729,18 +785,4 @@ function resetSteps() {
     updateStepIndicator(1);
 }
 
-// AIプロバイダーバッジを更新
-function updateProviderBadge(provider) {
-    const badge = document.getElementById('aiProviderBadge');
-    const providerText = document.getElementById('currentProvider');
-    
-    if (!badge || !providerText) return;
-    
-    if (provider === 'claude') {
-        badge.className = 'px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium';
-        providerText.innerHTML = '<i class="fas fa-robot mr-2"></i>Claude AI (高品質)';
-    } else {
-        badge.className = 'px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium';
-        providerText.innerHTML = '<i class="fas fa-robot mr-2"></i>GenSpark AI';
-    }
-}
+
