@@ -10,3 +10,8 @@
 - Cloudflare Pages: https://tatami-column-ai.pages.dev
 - D1 Database: tatami-column-ai-production
 - デプロイ日時: 2026-01-30 06:46:18
+
+## リポジトリ設定
+- 公開設定: Public
+- GitHub連携: 有効
+- 更新日時: 2026-01-30 06:50:20
