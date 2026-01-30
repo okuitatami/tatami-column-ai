@@ -70,7 +70,14 @@ column.post('/generate-titles', async (c) => {
     // タイトル候補を生成
     const titles = await aiClient.generateTitles(cleanedKeywords, cleanedRegions, companyInfo);
 
-    return c.json({ success: true, titles, provider: 'gemini' });
+    // タイトルをオブジェクト形式に変換（フロントエンド互換性のため）
+    const formattedTitles = titles.map((title, index) => ({
+      id: `title-${Date.now()}-${index}`,
+      title: title,
+      description: `${cleanedKeywords.join('、')}に関するコラム${cleanedRegions.length > 0 ? `（対象地域：${cleanedRegions.join('、')}）` : ''}`
+    }));
+
+    return c.json({ success: true, titles: formattedTitles, provider: 'gemini' });
   } catch (error) {
     console.error('Title generation error:', error);
     return c.json({ 
