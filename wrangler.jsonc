@@ -9,8 +9,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "webapp-production",
-      "database_id": "00000000-0000-0000-0000-000000000000"
+      "database_name": "tatami-column-ai-production",
+      "database_id": "2943094e-2bf4-453f-bca8-9c19613564a0"
     }
   ],
   // 環境変数の設定（本番環境用）
