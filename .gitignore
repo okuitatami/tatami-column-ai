@@ -34,3 +34,9 @@ lerna-debug.log*
 .cloudflare-token
 .github-token
 core
+
+# Environment variables (sensitive)
+.dev.vars
+.dev.vars.*
+*.env
+*.env.*
