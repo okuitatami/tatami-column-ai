@@ -30,3 +30,4 @@
 - AI_PROVIDER: gemini
 - GEMINI_API_KEY: 設定済み
 - 更新日時: 2026-01-30 13:13:33
+
