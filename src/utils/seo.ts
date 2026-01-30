@@ -39,14 +39,33 @@ export function extractKeywords(text: string, count: number = 5): string[] {
     'も', 'する', 'から', 'な', 'こと', 'として', 'い', 'や', 'れる', 'など', 'なっ', 
     'ない', 'この', 'ため', 'その', 'あっ', 'よう', 'また', 'もの', 'という', 'あり',
     'まで', 'られ', 'なる', 'へ', 'か', 'だ', 'これ', 'によって', 'により', 'おり',
-    'より', 'による', 'ず', 'なり', 'られる', 'において', 'ば', 'なかっ', 'なく', 'しかし'
+    'より', 'による', 'ず', 'なり', 'られる', 'において', 'ば', 'なかっ', 'なく', 'しかし',
+    'です', 'ます', 'ました', 'ください', 'お客様', 'こちら', 'それ', 'どう'
   ]);
 
-  // テキストを単語に分割（2文字以上）
-  const words = text
+  // Markdown記号やフォーマット記号を除外するパターン
+  const markdownPatterns = /[\*\#\[\]\(\)]/g;
+  
+  // テキストをクリーニング
+  const cleanedText = text
+    .replace(markdownPatterns, ' ')
     .replace(/[、。！？\n\r]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // テキストを単語に分割（2文字以上、かな漢字のみ）
+  const words = cleanedText
     .split(/\s+/)
-    .filter(word => word.length >= 2 && !stopWords.has(word));
+    .filter(word => {
+      // 長さチェック
+      if (word.length < 2 || word.length > 10) return false;
+      // ストップワードチェック
+      if (stopWords.has(word)) return false;
+      // Markdown記号やフォーマット記号を含むものを除外
+      if (word.match(/[\*\#\[\]\(\)\{\}]/)) return false;
+      // 日本語文字を含むかチェック
+      return word.match(/[ぁ-んァ-ヶ一-龠]/);
+    });
 
   // 単語の出現回数をカウント
   const wordCount = new Map<string, number>();
