@@ -210,8 +210,8 @@ ${regionText ? `【対象地域】\n${regionText}` : ''}
       const response = await this.chat(
         [{ role: 'user', content: prompt }],
         {
-          temperature: 0.8,
-          maxTokens: 1024,
+          temperature: 0.9,
+          maxTokens: 2048,
         }
       );
 
@@ -224,27 +224,47 @@ ${regionText ? `【対象地域】\n${regionText}` : ''}
           if (line.length === 0 || line.match(/^[\d\.\-\*]+$/)) {
             return false;
           }
-          // 番号付きタイトルから番号を削除
-          const cleanedLine = line.replace(/^[\d\.\-\*]+\s*/, '');
-          // 最低文字数チェック（15文字以上）
-          if (cleanedLine.length < 15) {
-            return false;
-          }
-          // すべてのキーワードが含まれているかチェック
-          const hasAllKeywords = keywords.every(keyword => 
-            cleanedLine.includes(keyword)
-          );
-          if (!hasAllKeywords) {
-            console.log(`Filtered out title (missing keywords): ${cleanedLine}`);
-            return false;
-          }
           return true;
         })
-        .map((line) => line.replace(/^[\d\.\-\*]+\s*/, '').trim());
+        .map((line) => line.replace(/^[\d\.\-\*]+\s*/, '').trim())
+        .filter((cleanedLine) => {
+          // 最低文字数チェック（15文字以上）
+          if (cleanedLine.length < 15) {
+            console.log(`Filtered out title (too short): ${cleanedLine}`);
+            return false;
+          }
+          
+          // すべてのキーワードが含まれているかチェック
+          const missingKeywords = keywords.filter(keyword => 
+            !cleanedLine.includes(keyword)
+          );
+          
+          if (missingKeywords.length > 0) {
+            console.log(`Filtered out title (missing keywords: ${missingKeywords.join(', ')}): ${cleanedLine}`);
+            return false;
+          }
+          
+          return true;
+        });
 
-      // 有効なタイトルが5個未満の場合は警告
+      // 有効なタイトルが5個未満の場合は警告（ログ用）
       if (titles.length < 5) {
-        console.warn(`Only ${titles.length} valid titles generated. Response:`, response);
+        console.warn(`Only ${titles.length} valid titles generated out of ${response.split('\n').length} lines`);
+        console.warn('Required keywords:', keywords);
+      }
+
+      // 最低5個は返す（フィルタ後でも）
+      if (titles.length === 0) {
+        // フィルタが厳しすぎる場合、緩和したバージョンを返す
+        const fallbackTitles = response
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0 && !line.match(/^[\d\.\-\*]+$/))
+          .map((line) => line.replace(/^[\d\.\-\*]+\s*/, '').trim())
+          .filter((line) => line.length >= 15);
+        
+        console.warn('Using fallback titles (relaxed filtering)');
+        return fallbackTitles.slice(0, 10);
       }
 
       return titles.slice(0, 10);
