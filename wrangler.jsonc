@@ -12,13 +12,13 @@
       "database_name": "tatami-column-ai-production",
       "database_id": "2943094e-2bf4-453f-bca8-9c19613564a0"
     }
-  ],
+  ]
   // 環境変数の設定（本番環境用）
   // ローカル開発は.dev.varsファイルを使用
-  // 本番環境: wrangler pages secret put AI_PROVIDER --project-name webapp
-  // 本番環境: wrangler pages secret put SESSION_SECRET --project-name webapp
-  // Claudeを使う場合: wrangler pages secret put CLAUDE_API_KEY --project-name webapp
-  "vars": {
-    "AI_PROVIDER": "genspark"
-  }
+  // 本番環境はCloudflare Pagesの環境変数設定（Secrets）を使用
+  // Settings > Environment variables で設定:
+  //   - AI_PROVIDER=gemini
+  //   - GEMINI_API_KEY=...
+  //   - COMPANY_NAME=奥井畳店
+  //   - SESSION_SECRET=...
 }
