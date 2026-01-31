@@ -370,19 +370,14 @@ ${targetAudience ? `【ターゲット読者】\n${targetAudience}` : ''}
       // JSONを抽出（複数のパターンに対応）
       let jsonText = response.trim();
       
-      // パターン1: ```json ... ``` で囲まれている場合
-      let jsonMatch = jsonText.match(/```json\s*([\s\S]*?)\s*```/);
-      if (jsonMatch) {
-        jsonText = jsonMatch[1].trim();
-      } else {
-        // パターン2: ``` ... ``` で囲まれている場合
-        jsonMatch = jsonText.match(/```\s*([\s\S]*?)\s*```/);
-        if (jsonMatch) {
-          jsonText = jsonMatch[1].trim();
-        }
-      }
+      // コードブロック記号を削除（```json、```、` などすべて）
+      jsonText = jsonText.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
+      jsonText = jsonText.replace(/^`+\s*json\s*/i, '').replace(/^`+\s*/, '').replace(/\s*`+$/, '');
       
-      // パターン3: JSONオブジェクトのみを抽出（{ ... } の最初と最後を見つける）
+      // 前後の空白を削除
+      jsonText = jsonText.trim();
+      
+      // JSONオブジェクトのみを抽出（{ ... } の最初と最後を見つける）
       const firstBrace = jsonText.indexOf('{');
       const lastBrace = jsonText.lastIndexOf('}');
       if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
