@@ -336,7 +336,7 @@ ${targetAudience ? `【ターゲット読者】\n${targetAudience}` : ''}
 - 地域名を複数回使用してSEO効果を高める
 
 【出力形式】
-以下のJSON形式で出力してください：
+**重要**: 以下のJSON形式**のみ**を出力してください。説明文やコードブロック記号は不要です。
 
 {
   "title": "タイトル",
@@ -351,6 +351,11 @@ ${targetAudience ? `【ターゲット読者】\n${targetAudience}` : ''}
     {"question": "質問2", "answer": "回答2"}
   ]
 }
+
+**注意事項**:
+- JSON以外の文字列を含めないでください
+- ```json や ``` などのコードブロック記号は不要です
+- 純粋なJSONオブジェクトのみを出力してください
 `.trim();
 
     try {
@@ -362,14 +367,40 @@ ${targetAudience ? `【ターゲット読者】\n${targetAudience}` : ''}
         }
       );
 
-      // JSONを抽出（```json ... ``` で囲まれている場合があるため）
-      let jsonText = response;
-      const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
+      // JSONを抽出（複数のパターンに対応）
+      let jsonText = response.trim();
+      
+      // パターン1: ```json ... ``` で囲まれている場合
+      let jsonMatch = jsonText.match(/```json\s*([\s\S]*?)\s*```/);
       if (jsonMatch) {
-        jsonText = jsonMatch[1];
+        jsonText = jsonMatch[1].trim();
+      } else {
+        // パターン2: ``` ... ``` で囲まれている場合
+        jsonMatch = jsonText.match(/```\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          jsonText = jsonMatch[1].trim();
+        }
+      }
+      
+      // パターン3: JSONオブジェクトのみを抽出（{ ... } の最初と最後を見つける）
+      const firstBrace = jsonText.indexOf('{');
+      const lastBrace = jsonText.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        jsonText = jsonText.substring(firstBrace, lastBrace + 1);
       }
 
-      const result = JSON.parse(jsonText);
+      // JSONをパース
+      let result;
+      try {
+        result = JSON.parse(jsonText);
+      } catch (parseError) {
+        // パースエラーの場合、詳細情報をログに出力
+        console.error('JSON parse error. Text length:', jsonText.length);
+        console.error('First 200 chars:', jsonText.substring(0, 200));
+        console.error('Last 200 chars:', jsonText.substring(Math.max(0, jsonText.length - 200)));
+        throw new Error(`JSONのパースに失敗しました: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+      }
+      
       return result;
     } catch (error: any) {
       console.error('Column generation error:', error);
