@@ -132,12 +132,20 @@ column.post('/generate-column', async (c) => {
     const metaDescription = generateMetaDescription(columnData.introduction);
     columnData.metaDescription = metaDescription;
 
+    // closingをオブジェクト形式に変換（フロントエンド互換性のため）
+    if (typeof columnData.closing === 'string') {
+      columnData.closing = {
+        heading: 'まとめ',
+        content: columnData.closing
+      };
+    }
+
     // 全文を結合
     const fullText = [
       columnData.title,
       columnData.introduction,
       ...columnData.sections.map(s => s.heading + ' ' + s.content),
-      columnData.closing,
+      typeof columnData.closing === 'string' ? columnData.closing : columnData.closing.content,
       ...columnData.qa.map(q => q.question + ' ' + q.answer)
     ].join(' ');
 
