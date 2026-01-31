@@ -119,13 +119,28 @@ column.post('/generate-column', async (c) => {
       website: c.env.COMPANY_WEBSITE || '',
     };
 
+    // AI学習データを取得
+    const user = c.get('user');
+    let learningContext = '';
+    if (user) {
+      try {
+        const { getRecentCorrections, formatCorrectionsForPrompt } = await import('../utils/ai-learning');
+        const corrections = await getRecentCorrections(c.env.DB, user.id, cleanedKeywords, 5);
+        learningContext = formatCorrectionsForPrompt(corrections);
+      } catch (learningError) {
+        console.error('Failed to fetch learning data:', learningError);
+        // 学習データ取得失敗してもコラム生成は続行
+      }
+    }
+
     // コラムを生成
     const columnData = await aiClient.generateColumn(
       title,
       cleanedKeywords,
       cleanedRegions,
       companyInfo,
-      targetAudience
+      targetAudience,
+      learningContext
     );
 
     // メタディスクリプションを生成

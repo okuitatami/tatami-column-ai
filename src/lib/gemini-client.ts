@@ -287,7 +287,8 @@ ${regionText ? `【対象地域】\n${regionText}` : ''}
       features?: string[];
       website?: string;
     },
-    targetAudience?: string
+    targetAudience?: string,
+    learningContext?: string
   ): Promise<{
     title: string;
     introduction: string;
@@ -356,6 +357,7 @@ ${targetAudience ? `【ターゲット読者】\n${targetAudience}` : ''}
 - JSON以外の文字列を含めないでください
 - ```json や ``` などのコードブロック記号は不要です
 - 純粋なJSONオブジェクトのみを出力してください
+${learningContext || ''}
 `.trim();
 
     try {

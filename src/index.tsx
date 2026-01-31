@@ -4,6 +4,7 @@ import { serveStatic } from 'hono/cloudflare-workers';
 import type { Bindings } from './types';
 import auth from './routes/auth';
 import column from './routes/column';
+import aiLearning from './routes/ai-learning';
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -19,6 +20,7 @@ app.use('/static/*', serveStatic({ root: './public' }));
 // APIルート
 app.route('/api/auth', auth);
 app.route('/api/column', column);
+app.route('/api/ai-learning', aiLearning);
 
 // ヘルスチェック
 app.get('/api/health', (c) => {
