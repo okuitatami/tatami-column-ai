@@ -370,12 +370,20 @@ ${targetAudience ? `【ターゲット読者】\n${targetAudience}` : ''}
       // JSONを抽出（複数のパターンに対応）
       let jsonText = response.trim();
       
-      // コードブロック記号を削除（```json、```、` などすべて）
-      jsonText = jsonText.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
-      jsonText = jsonText.replace(/^`+\s*json\s*/i, '').replace(/^`+\s*/, '').replace(/\s*`+$/, '');
+      // すべてのバッククォート記号を削除（複数回実行）
+      for (let i = 0; i < 3; i++) {
+        jsonText = jsonText.replace(/```json/gi, '');
+        jsonText = jsonText.replace(/```/g, '');
+        jsonText = jsonText.replace(/`/g, '');
+      }
       
-      // 前後の空白を削除
+      // 前後の空白と改行を削除
       jsonText = jsonText.trim();
+      
+      // "json" という文字列が先頭にあれば削除
+      if (jsonText.toLowerCase().startsWith('json')) {
+        jsonText = jsonText.substring(4).trim();
+      }
       
       // JSONオブジェクトのみを抽出（{ ... } の最初と最後を見つける）
       const firstBrace = jsonText.indexOf('{');
