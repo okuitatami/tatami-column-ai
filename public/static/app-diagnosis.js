@@ -53,31 +53,69 @@ function showQuestion(index) {
 // 選択肢をレンダリング
 function renderOptions(question) {
     const selectedAnswer = answers[question.id];
+    const isMultiple = question.type === 'multiple';
+    const selectedValues = isMultiple && Array.isArray(selectedAnswer) ? selectedAnswer : [];
     
-    return question.options.map((option, index) => `
+    return question.options.map((option, index) => {
+        const isSelected = isMultiple 
+            ? selectedValues.includes(option.value)
+            : selectedAnswer === option.value;
+            
+        return `
         <label class="block cursor-pointer">
             <div class="border-2 rounded-lg p-4 transition-all hover:border-blue-500 hover:bg-blue-50 ${
-                selectedAnswer === option.value ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
             }">
                 <div class="flex items-center">
                     <input 
-                        type="radio" 
+                        type="${isMultiple ? 'checkbox' : 'radio'}" 
                         name="question_${question.id}" 
                         value="${option.value}"
-                        ${selectedAnswer === option.value ? 'checked' : ''}
-                        onchange="selectOption('${question.id}', '${option.value}')"
+                        ${isSelected ? 'checked' : ''}
+                        onchange="selectOption('${question.id}', '${option.value}', ${isMultiple})"
                         class="w-4 h-4 text-blue-600"
                     >
                     <span class="ml-3 text-lg text-gray-700">${option.label}</span>
                 </div>
             </div>
         </label>
-    `).join('');
+    `;
+    }).join('');
 }
 
 // 選択肢を選択
-function selectOption(questionId, value) {
-    answers[questionId] = value;
+function selectOption(questionId, value, isMultiple) {
+    if (isMultiple) {
+        // 複数選択の場合
+        if (!answers[questionId]) {
+            answers[questionId] = [];
+        }
+        
+        const currentValues = answers[questionId];
+        const index = currentValues.indexOf(value);
+        
+        if (index > -1) {
+            // 既に選択されている場合は削除
+            currentValues.splice(index, 1);
+        } else {
+            // 選択されていない場合は追加
+            currentValues.push(value);
+        }
+        
+        // 配列が空の場合は削除
+        if (currentValues.length === 0) {
+            delete answers[questionId];
+        }
+    } else {
+        // 単一選択の場合
+        answers[questionId] = value;
+    }
+    
+    // 表示を更新
+    const currentQuestion = questions[currentQuestionIndex];
+    const optionsContainer = document.getElementById('optionsContainer');
+    optionsContainer.innerHTML = renderOptions(currentQuestion);
+    
     updateNavigation();
 }
 

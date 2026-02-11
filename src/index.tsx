@@ -29,6 +29,177 @@ app.get('/api/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// 診断チャート設定ページ
+app.get('/diagnosis-settings', (c) => {
+  return c.html(`
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>診断チャート設定</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- ヘッダー -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-cog text-3xl mr-3"></i>
+                    <h1 class="text-2xl font-bold">診断チャート設定</h1>
+                </div>
+                <a href="/" class="text-white hover:text-gray-200 transition-colors">
+                    <i class="fas fa-home mr-2"></i>ホームに戻る
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="container mx-auto px-4 py-8 max-w-4xl">
+        <div class="bg-white rounded-xl shadow-lg p-8">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">
+                    <i class="fas fa-sliders-h mr-2 text-blue-600"></i>
+                    診断チャートの設定
+                </h2>
+                <p class="text-gray-600">
+                    畳診断チャートの動作と表示内容をカスタマイズできます。
+                </p>
+            </div>
+
+            <!-- 診断傾向設定 -->
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-bullseye mr-2 text-green-600"></i>
+                    進めたい診断傾向
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">
+                    診断結果で優先的に推奨する素材を選択してください。
+                </p>
+                
+                <div class="space-y-3">
+                    <label class="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-green-500 transition-colors">
+                        <input type="radio" name="preferredMaterial" value="natural" class="w-5 h-5 text-green-600">
+                        <div class="ml-4">
+                            <div class="font-bold text-gray-800">天然素材（い草）を優先</div>
+                            <div class="text-sm text-gray-600">天然い草の香りや質感を重視したお客様向け</div>
+                        </div>
+                    </label>
+                    
+                    <label class="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                        <input type="radio" name="preferredMaterial" value="chemical" class="w-5 h-5 text-blue-600">
+                        <div class="ml-4">
+                            <div class="font-bold text-gray-800">化学表（和紙・ポリプロピレン）を優先</div>
+                            <div class="text-sm text-gray-600">耐久性・お手入れのしやすさを重視したお客様向け</div>
+                        </div>
+                    </label>
+                    
+                    <label class="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 transition-colors">
+                        <input type="radio" name="preferredMaterial" value="both" class="w-5 h-5 text-purple-600" checked>
+                        <div class="ml-4">
+                            <div class="font-bold text-gray-800">どちらもバランスよく提案</div>
+                            <div class="text-sm text-gray-600">お客様の回答内容に応じて最適な素材を提案</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- お問い合わせURL設定 -->
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-link mr-2 text-orange-600"></i>
+                    お問い合わせページURL
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">
+                    診断結果画面に表示される「お問い合わせページはこちら」ボタンのリンク先を設定してください。
+                </p>
+                
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-globe text-gray-400"></i>
+                    </div>
+                    <input 
+                        type="url" 
+                        id="inquiryUrl" 
+                        placeholder="https://example.com/contact" 
+                        class="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                </div>
+                <p class="text-xs text-gray-500 mt-2">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    入力しない場合は、お問い合わせボタンは表示されません
+                </p>
+            </div>
+
+            <!-- プレビューと保存 -->
+            <div class="flex items-center justify-between pt-6 border-t border-gray-200">
+                <button 
+                    onclick="previewDiagnosis()" 
+                    class="bg-gray-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-700 transition-colors"
+                >
+                    <i class="fas fa-eye mr-2"></i>診断チャートをプレビュー
+                </button>
+                
+                <button 
+                    id="saveBtn"
+                    onclick="saveSettings()" 
+                    class="bg-gradient-to-r from-green-600 to-green-700 text-white px-8 py-3 rounded-lg font-medium hover:from-green-700 hover:to-green-800 transition-all shadow-lg hover:shadow-xl"
+                >
+                    <i class="fas fa-save mr-2"></i>設定を保存
+                </button>
+            </div>
+        </div>
+
+        <!-- 設定済み価格について -->
+        <div class="mt-8 bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+            <h3 class="text-lg font-bold text-blue-900 mb-3">
+                <i class="fas fa-yen-sign mr-2"></i>
+                概算費用について
+            </h3>
+            <p class="text-blue-800 mb-4">
+                診断結果に表示される概算費用は、以下の標準価格に基づいて自動計算されます：
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white rounded-lg p-4 border border-blue-200">
+                    <div class="text-sm text-gray-600 mb-1">裏返し</div>
+                    <div class="text-xl font-bold text-blue-600">5,000〜8,000円</div>
+                    <div class="text-xs text-gray-500 mt-1">1畳あたり</div>
+                </div>
+                <div class="bg-white rounded-lg p-4 border border-blue-200">
+                    <div class="text-sm text-gray-600 mb-1">表替え</div>
+                    <div class="text-xl font-bold text-blue-600">8,000〜15,000円</div>
+                    <div class="text-xs text-gray-500 mt-1">1畳あたり</div>
+                </div>
+                <div class="bg-white rounded-lg p-4 border border-blue-200">
+                    <div class="text-sm text-gray-600 mb-1">新調</div>
+                    <div class="text-xl font-bold text-blue-600">15,000〜25,000円</div>
+                    <div class="text-xs text-gray-500 mt-1">1畳あたり</div>
+                </div>
+            </div>
+            <p class="text-sm text-blue-700 mt-4">
+                <i class="fas fa-info-circle mr-1"></i>
+                価格は畳表・畳床の品質により変動することが診断結果画面に自動で表示されます。
+            </p>
+        </div>
+    </main>
+
+    <script src="/static/app-diagnosis-settings.js"></script>
+</body>
+</html>
+  `);
+});
+
 // 診断チャートページ
 app.get('/diagnosis', (c) => {
   return c.html(`
@@ -163,6 +334,9 @@ app.get('/', (c) => {
                 </div>
                 <div id="userMenu" class="hidden">
                     <div class="flex items-center space-x-4">
+                        <a href="/diagnosis-settings" class="text-white hover:text-gray-200 transition-colors" title="診断チャート設定">
+                            <i class="fas fa-cog text-xl"></i>
+                        </a>
                         <span id="username" class="font-medium"></span>
                         <button onclick="logout()" class="btn bg-white text-purple-600 px-4 py-2 rounded-lg font-medium hover:bg-gray-100">
                             <i class="fas fa-sign-out-alt mr-2"></i>ログアウト

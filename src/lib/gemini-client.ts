@@ -394,6 +394,12 @@ ${learningContext || ''}
         jsonText = jsonText.substring(firstBrace, lastBrace + 1);
       }
 
+      // 不正な改行やエスケープを修正
+      // JSON内の改行文字を適切にエスケープ
+      jsonText = jsonText.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+      // すでにエスケープされている場合の二重エスケープを防ぐ
+      jsonText = jsonText.replace(/\\\\n/g, '\\n').replace(/\\\\r/g, '\\r').replace(/\\\\t/g, '\\t');
+
       // JSONをパース
       let result;
       try {
@@ -401,7 +407,8 @@ ${learningContext || ''}
       } catch (parseError) {
         // パースエラーの場合、詳細情報をログに出力
         console.error('JSON parse error. Text length:', jsonText.length);
-        console.error('First 200 chars:', jsonText.substring(0, 200));
+        console.error('First 500 chars:', jsonText.substring(0, 500));
+        console.error('Error position context:', jsonText.substring(Math.max(0, 876 - 100), Math.min(jsonText.length, 876 + 100)));
         console.error('Last 200 chars:', jsonText.substring(Math.max(0, jsonText.length - 200)));
         throw new Error(`JSONのパースに失敗しました: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
       }
