@@ -65,6 +65,7 @@ export interface GeminiChatOptions {
   temperature?: number;
   maxTokens?: number;
   systemInstruction?: string;
+  responseMimeType?: string;
 }
 
 export class GeminiClient {
@@ -94,7 +95,7 @@ export class GeminiClient {
           parts: [{ text: msg.content }],
         }));
 
-      const requestBody = {
+      const requestBody: any = {
         contents,
         systemInstruction: {
           parts: [{ text: systemInstruction }],
@@ -104,6 +105,11 @@ export class GeminiClient {
           maxOutputTokens: options.maxTokens || 2048,
         },
       };
+      
+      // JSONレスポンスを強制する
+      if (options.responseMimeType) {
+        requestBody.generationConfig.responseMimeType = options.responseMimeType;
+      }
 
       const url = `${this.baseUrl}/models/${model}:generateContent?key=${this.apiKey}`;
       
@@ -366,11 +372,17 @@ ${learningContext || ''}
         {
           temperature: 0.7,
           maxTokens: 4096,
+          responseMimeType: 'application/json',
         }
       );
 
       // JSONを抽出（複数のパターンに対応）
       let jsonText = response.trim();
+      
+      // デバッグ用：レスポンスの最初と最後を確認
+      console.log('Raw response length:', response.length);
+      console.log('Raw response first 500 chars:', response.substring(0, 500));
+      console.log('Raw response last 500 chars:', response.substring(Math.max(0, response.length - 500)));
       
       // すべてのバッククォート記号を削除（複数回実行）
       for (let i = 0; i < 3; i++) {
@@ -394,11 +406,8 @@ ${learningContext || ''}
         jsonText = jsonText.substring(firstBrace, lastBrace + 1);
       }
 
-      // 不正な改行やエスケープを修正
-      // JSON内の改行文字を適切にエスケープ
-      jsonText = jsonText.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
-      // すでにエスケープされている場合の二重エスケープを防ぐ
-      jsonText = jsonText.replace(/\\\\n/g, '\\n').replace(/\\\\r/g, '\\r').replace(/\\\\t/g, '\\t');
+      console.log('Cleaned JSON length:', jsonText.length);
+      console.log('Cleaned JSON first 500 chars:', jsonText.substring(0, 500));
 
       // JSONをパース
       let result;
@@ -407,9 +416,7 @@ ${learningContext || ''}
       } catch (parseError) {
         // パースエラーの場合、詳細情報をログに出力
         console.error('JSON parse error. Text length:', jsonText.length);
-        console.error('First 500 chars:', jsonText.substring(0, 500));
-        console.error('Error position context:', jsonText.substring(Math.max(0, 876 - 100), Math.min(jsonText.length, 876 + 100)));
-        console.error('Last 200 chars:', jsonText.substring(Math.max(0, jsonText.length - 200)));
+        console.error('Full cleaned text:', jsonText);
         throw new Error(`JSONのパースに失敗しました: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
       }
       
