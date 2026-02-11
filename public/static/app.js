@@ -564,11 +564,24 @@ function renderPreview() {
         <div class="lead text-lg mb-8">${currentColumn.introduction}</div>
     `;
     
-    currentColumn.sections.forEach(section => {
+    currentColumn.sections.forEach((section, index) => {
         html += `
             <h2 class="text-2xl font-bold mt-8 mb-4">${section.heading}</h2>
             <p class="mb-4 whitespace-pre-wrap">${section.content}</p>
         `;
+        
+        // セクションの中間（2番目のセクション後）に診断チャートボタンを挿入
+        if (index === 1 && currentColumn.sections.length > 2) {
+            html += `
+            <div class="my-8 p-6 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white text-center">
+                <h3 class="text-2xl font-bold mb-3">🔍 あなたの畳に最適な工法を診断</h3>
+                <p class="mb-4 text-white opacity-90">簡単な質問に答えるだけで、あなたの畳に最適な工法と素材をご提案します。</p>
+                <a href="/diagnosis" target="_blank" class="inline-block bg-white text-purple-600 font-bold py-3 px-8 rounded-lg hover:bg-gray-100 transition-all">
+                    <i class="fas fa-clipboard-check mr-2"></i>無料診断を始める
+                </a>
+            </div>
+            `;
+        }
     });
     
     html += `
@@ -693,6 +706,36 @@ function generateHTML() {
             margin-top: 0;
             color: #667eea;
         }
+        .diagnosis-cta {
+            margin: 2em 0;
+            padding: 2em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            text-align: center;
+        }
+        .diagnosis-cta h3 {
+            color: white;
+            margin-top: 0;
+            margin-bottom: 0.5em;
+        }
+        .diagnosis-cta p {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 1.5em;
+        }
+        .diagnosis-btn {
+            display: inline-block;
+            padding: 1em 2em;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .diagnosis-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -701,11 +744,24 @@ function generateHTML() {
         <div class="lead">${currentColumn.introduction}</div>
 `;
     
-    currentColumn.sections.forEach(section => {
+    currentColumn.sections.forEach((section, index) => {
         html += `
         <h2>${section.heading}</h2>
         <p>${section.content.replace(/\n/g, '<br>')}</p>
 `;
+        
+        // セクションの中間（2番目のセクション後）に診断チャートボタンを挿入
+        if (index === 1 && currentColumn.sections.length > 2) {
+            html += `
+        <div class="diagnosis-cta">
+            <h3>🔍 あなたの畳に最適な工法を診断</h3>
+            <p>簡単な質問に答えるだけで、あなたの畳に最適な工法と素材をご提案します。</p>
+            <a href="/diagnosis" class="diagnosis-btn">
+                <i class="fas fa-clipboard-check"></i> 無料診断を始める
+            </a>
+        </div>
+`;
+        }
     });
     
     html += `
