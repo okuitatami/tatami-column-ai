@@ -168,8 +168,7 @@ column.post('/generate-column', async (c) => {
     const extractedKeywords = extractKeywords(fullText, 3);
     columnData.keywords = [...cleanedKeywords, ...extractedKeywords].slice(0, 5);
 
-    // コラム履歴を保存
-    const user = c.get('user');
+    // コラム履歴を保存（userは既に123行目で宣言済み）
     if (user) {
       const { saveColumnHistory } = await import('../utils/db');
       try {
