@@ -395,10 +395,16 @@ app.get('/', (c) => {
                         </div>
                         
                         <div class="flex items-center space-x-4">
+                            <button onclick="evaluateColumn(true)" class="btn bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700" title="このコラムは良質です">
+                                <i class="fas fa-thumbs-up mr-2"></i>承認
+                            </button>
+                            <button onclick="evaluateColumn(false)" class="btn bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-yellow-700" title="改善が必要です">
+                                <i class="fas fa-thumbs-down mr-2"></i>改善必要
+                            </button>
                             <button onclick="copyToClipboard()" class="btn bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700">
                                 <i class="fas fa-copy mr-2"></i>コピー
                             </button>
-                            <button onclick="exportHTML()" class="btn bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700">
+                            <button onclick="exportHTML()" class="btn bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700">
                                 <i class="fas fa-download mr-2"></i>HTML出力
                             </button>
                             <button onclick="backToTitles()" class="btn bg-gray-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-600">

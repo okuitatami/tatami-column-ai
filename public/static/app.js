@@ -841,4 +841,135 @@ function resetSteps() {
     updateStepIndicator(1);
 }
 
+// AI学習：コラムを評価
+async function evaluateColumn(isApproved) {
+    if (!currentColumn || !currentColumn.id) {
+        alert('評価するコラムが見つかりません');
+        return;
+    }
+    
+    const feedback = isApproved 
+        ? null 
+        : prompt('改善が必要な点を教えてください（任意）:');
+    
+    // キャンセルされた場合は処理を中止
+    if (!isApproved && feedback === null) {
+        return;
+    }
+    
+    try {
+        showLoading('評価を送信中...');
+        
+        const response = await fetch('/api/ai-learning/evaluate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                columnId: currentColumn.id,
+                isApproved: isApproved,
+                feedback: feedback || undefined
+            })
+        });
+        
+        const data = await response.json();
+        hideLoading();
+        
+        if (data.success) {
+            alert(isApproved ? '👍 評価ありがとうございます！' : '📝 フィードバックを受け付けました！');
+        } else {
+            alert(data.error || '評価の送信に失敗しました');
+        }
+    } catch (error) {
+        hideLoading();
+        console.error('Evaluation error:', error);
+        alert('評価の送信に失敗しました');
+    }
+}
+
+// AI学習：セクションを訂正
+async function correctSection(sectionIndex, sectionType) {
+    if (!currentColumn) {
+        alert('訂正するコラムが見つかりません');
+        return;
+    }
+    
+    let originalHeading, originalContent;
+    
+    if (sectionType === 'introduction') {
+        originalHeading = 'はじめに';
+        originalContent = currentColumn.introduction;
+    } else if (sectionType === 'closing') {
+        originalHeading = currentColumn.closing.heading;
+        originalContent = currentColumn.closing.content;
+    } else if (sectionType === 'section') {
+        const section = currentColumn.sections[sectionIndex];
+        originalHeading = section.heading;
+        originalContent = section.content;
+    } else {
+        alert('不正なセクションタイプです');
+        return;
+    }
+    
+    const correctedHeading = prompt('訂正後の見出し:', originalHeading);
+    if (correctedHeading === null) return; // キャンセル
+    
+    const correctedContent = prompt('訂正後の本文:', originalContent);
+    if (correctedContent === null) return; // キャンセル
+    
+    const correctionReason = prompt('訂正理由（AIの学習に使用されます）:', '');
+    if (correctionReason === null) return; // キャンセル
+    
+    try {
+        showLoading('訂正を送信中...');
+        
+        const response = await fetch('/api/ai-learning/correct', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                columnId: currentColumn.id || null,
+                sectionType: sectionType,
+                sectionIndex: sectionIndex,
+                originalHeading: originalHeading,
+                originalContent: originalContent,
+                correctedHeading: correctedHeading,
+                correctedContent: correctedContent,
+                correctionReason: correctionReason,
+                keywords: currentColumn.keywords || [],
+                regions: [] // 必要に応じて地域情報を追加
+            })
+        });
+        
+        const data = await response.json();
+        hideLoading();
+        
+        if (data.success) {
+            alert('✅ 訂正を受け付けました！AIの学習に活用されます。');
+            
+            // 訂正内容を反映
+            if (sectionType === 'introduction') {
+                currentColumn.introduction = correctedContent;
+            } else if (sectionType === 'closing') {
+                currentColumn.closing.heading = correctedHeading;
+                currentColumn.closing.content = correctedContent;
+            } else if (sectionType === 'section') {
+                currentColumn.sections[sectionIndex].heading = correctedHeading;
+                currentColumn.sections[sectionIndex].content = correctedContent;
+            }
+            
+            // 表示を更新
+            renderPreview();
+            updateSEOAnalysis();
+        } else {
+            alert(data.error || '訂正の送信に失敗しました');
+        }
+    } catch (error) {
+        hideLoading();
+        console.error('Correction error:', error);
+        alert('訂正の送信に失敗しました');
+    }
+}
+
 
