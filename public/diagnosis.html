@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>畳診断チャート | 最適な畳替え方法をご提案</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen py-8 px-4">
+        <div class="max-w-3xl mx-auto">
+            <!-- ヘッダー -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                    <i class="fas fa-clipboard-check text-purple-600 mr-2"></i>
+                    畳診断チャート
+                </h1>
+                <p class="text-gray-600">あなたに最適な畳替え方法をご提案します</p>
+            </div>
+
+            <!-- プログレスバー -->
+            <div id="progressContainer" class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="flex justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">進捗状況</span>
+                    <span id="progressText" class="text-sm font-medium text-purple-600">0 / 7</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div id="progressBar" class="progress-bar bg-purple-600 h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- 質問コンテナ -->
+            <div id="questionContainer" class="bg-white rounded-lg shadow-md p-6 mb-6"></div>
+
+            <!-- ナビゲーションボタン -->
+            <div id="navigationButtons" class="flex justify-between">
+                <button id="prevBtn" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition hidden">
+                    <i class="fas fa-arrow-left mr-2"></i>前の質問
+                </button>
+                <button id="nextBtn" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition ml-auto">
+                    次の質問<i class="fas fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+
+            <!-- 結果表示 -->
+            <div id="resultContainer" class="hidden"></div>
+        </div>
+    </div>
+
+    <script src="/static/app-diagnosis.js"></script>
+</body>
+</html>

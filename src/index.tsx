@@ -5,6 +5,7 @@ import type { Bindings } from './types';
 import auth from './routes/auth';
 import column from './routes/column';
 import aiLearning from './routes/ai-learning';
+import diagnosis from './routes/diagnosis';
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -21,10 +22,81 @@ app.use('/static/*', serveStatic({ root: './public' }));
 app.route('/api/auth', auth);
 app.route('/api/column', column);
 app.route('/api/ai-learning', aiLearning);
+app.route('/api/diagnosis', diagnosis);
 
 // ヘルスチェック
 app.get('/api/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// 診断チャートページ
+app.get('/diagnosis', (c) => {
+  return c.html(`
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>畳診断チャート</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- ヘッダー -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-center">
+                <i class="fas fa-clipboard-check text-3xl mr-3"></i>
+                <h1 class="text-2xl font-bold">畳診断チャート</h1>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="container mx-auto px-4 py-8 max-w-3xl">
+        <!-- プログレスバー -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-700">診断進捗</span>
+                <span class="text-sm font-medium text-gray-700" id="progressText">0 / 7</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+                <div id="progressBar" class="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- 質問コンテナ -->
+        <div id="questionContainer"></div>
+
+        <!-- ナビゲーションボタン -->
+        <div id="navigationButtons" class="flex space-x-4 mt-6">
+            <button id="prevBtn" onclick="prevQuestion()" class="hidden flex-1 bg-gray-500 text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-600 transition-all">
+                <i class="fas fa-arrow-left mr-2"></i>前へ
+            </button>
+            <button id="nextBtn" onclick="nextQuestion()" disabled class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                次へ<i class="fas fa-arrow-right ml-2"></i>
+            </button>
+            <button id="submitBtn" onclick="submitDiagnosis()" class="hidden flex-1 bg-gradient-to-r from-green-600 to-green-700 text-white py-3 px-6 rounded-lg font-medium hover:from-green-700 hover:to-green-800 transition-all">
+                <i class="fas fa-check-circle mr-2"></i>診断する
+            </button>
+        </div>
+
+        <!-- 結果コンテナ -->
+        <div id="resultContainer" class="hidden"></div>
+    </main>
+
+    <script src="/static/app-diagnosis.js"></script>
+</body>
+</html>
+  `);
 });
 
 // メインページ

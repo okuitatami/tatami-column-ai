@@ -1,412 +1,309 @@
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 診断チャート機能
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-let currentStep = 1;
-let priceSettings = {};
+// 診断チャートアプリケーション
+let currentQuestionIndex = 0;
+let questions = [];
 let answers = {};
+let diagnosisResult = null;
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 初期化
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🎉 Diagnosis Page initialized');
-    loadPriceSettings();
-    trackPageView();
-});
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// アクセス解析: ページビュー
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-async function trackPageView() {
+document.addEventListener('DOMContentLoaded', async () => {
     try {
-        await fetch('/api/analytics/pageview', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                path: '/diagnosis',
-                title: '畳診断チャート'
-            })
-        });
-    } catch (error) {
-        console.error('Failed to track pageview:', error);
-    }
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// アクセス解析: 診断開始
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-async function trackDiagnosisStart() {
-    try {
-        await fetch('/api/analytics/diagnosis-start', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                path: '/diagnosis'
-            })
-        });
-    } catch (error) {
-        console.error('Failed to track diagnosis start:', error);
-    }
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// アクセス解析: 診断完了
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-async function trackDiagnosisComplete(result) {
-    try {
-        await fetch('/api/analytics/diagnosis-complete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                path: '/diagnosis',
-                result_type: result
-            })
-        });
-    } catch (error) {
-        console.error('Failed to track diagnosis complete:', error);
-    }
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 価格設定の読み込み
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-async function loadPriceSettings() {
-    try {
-        const response = await fetch('/api/price-settings');
+        // 質問データを取得
+        const response = await fetch('/api/diagnosis/questions');
         const data = await response.json();
         
-        if (response.ok) {
-            priceSettings = data.settings || {};
+        if (data.success) {
+            questions = data.questions;
+            showQuestion(0);
+        } else {
+            alert('質問データの取得に失敗しました');
         }
     } catch (error) {
-        console.error('Failed to load price settings:', error);
+        console.error('初期化エラー:', error);
+        alert('初期化に失敗しました');
     }
+});
+
+// 質問を表示
+function showQuestion(index) {
+    currentQuestionIndex = index;
+    const question = questions[index];
+    
+    // プログレス更新
+    updateProgress();
+    
+    // 質問コンテナ
+    const questionContainer = document.getElementById('questionContainer');
+    questionContainer.innerHTML = `
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="mb-4">
+                <span class="text-sm text-gray-500">質問 ${index + 1} / ${questions.length}</span>
+                <h2 class="text-2xl font-bold text-gray-800 mt-2">${question.question}</h2>
+            </div>
+            
+            <div class="space-y-3" id="optionsContainer">
+                ${renderOptions(question)}
+            </div>
+        </div>
+    `;
+    
+    // ナビゲーションボタンの状態更新
+    updateNavigation();
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 診断開始
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function startDiagnosis() {
-    currentStep = 1;
-    answers = {};
+// 選択肢をレンダリング
+function renderOptions(question) {
+    const selectedAnswer = answers[question.id];
     
-    document.getElementById('diagnosisStart').classList.add('hidden');
-    document.getElementById('diagnosisQuestions').classList.remove('hidden');
-    
-    showQuestion(1);
-    trackDiagnosisStart();
+    return question.options.map((option, index) => `
+        <label class="block cursor-pointer">
+            <div class="border-2 rounded-lg p-4 transition-all hover:border-blue-500 hover:bg-blue-50 ${
+                selectedAnswer === option.value ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+            }">
+                <div class="flex items-center">
+                    <input 
+                        type="radio" 
+                        name="question_${question.id}" 
+                        value="${option.value}"
+                        ${selectedAnswer === option.value ? 'checked' : ''}
+                        onchange="selectOption('${question.id}', '${option.value}')"
+                        class="w-4 h-4 text-blue-600"
+                    >
+                    <span class="ml-3 text-lg text-gray-700">${option.label}</span>
+                </div>
+            </div>
+        </label>
+    `).join('');
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 質問の表示
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function showQuestion(questionNum) {
-    // すべての質問を非表示
-    for (let i = 1; i <= 7; i++) {
-        document.getElementById(`question${i}`).classList.add('hidden');
-    }
-    
-    // 現在の質問を表示
-    document.getElementById(`question${questionNum}`).classList.remove('hidden');
-    
-    // 進行状況を更新
-    updateProgress(questionNum);
-    
-    currentStep = questionNum;
+// 選択肢を選択
+function selectOption(questionId, value) {
+    answers[questionId] = value;
+    updateNavigation();
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 進行状況の更新
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function updateProgress(step) {
-    const progressBar = document.getElementById('progressBar');
-    const progressText = document.getElementById('progressText');
+// プログレスバー更新
+function updateProgress() {
+    const answeredCount = Object.keys(answers).length;
+    const progress = (answeredCount / questions.length) * 100;
     
-    const percentage = (step / 7) * 100;
-    progressBar.style.width = `${percentage}%`;
-    progressText.textContent = `質問 ${step} / 7`;
+    document.getElementById('progressBar').style.width = `${progress}%`;
+    document.getElementById('progressText').textContent = `${answeredCount} / ${questions.length}`;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 回答の処理
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function answerQuestion(questionNum, answer) {
-    answers[`q${questionNum}`] = answer;
+// ナビゲーションボタン更新
+function updateNavigation() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
     
-    if (questionNum < 7) {
-        // 次の質問へ
-        showQuestion(questionNum + 1);
+    // 前へボタン
+    if (currentQuestionIndex === 0) {
+        prevBtn.classList.add('hidden');
     } else {
-        // 診断完了
-        showResult();
+        prevBtn.classList.remove('hidden');
+    }
+    
+    // 次へ・診断ボタン
+    const currentQuestion = questions[currentQuestionIndex];
+    const isAnswered = answers[currentQuestion.id] !== undefined;
+    
+    if (currentQuestionIndex === questions.length - 1) {
+        nextBtn.classList.add('hidden');
+        submitBtn.classList.remove('hidden');
+        submitBtn.disabled = !isAnswered;
+    } else {
+        nextBtn.classList.remove('hidden');
+        submitBtn.classList.add('hidden');
+        nextBtn.disabled = !isAnswered;
     }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 診断結果の表示
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 前へ
+function prevQuestion() {
+    if (currentQuestionIndex > 0) {
+        showQuestion(currentQuestionIndex - 1);
+    }
+}
+
+// 次へ
+function nextQuestion() {
+    if (currentQuestionIndex < questions.length - 1) {
+        showQuestion(currentQuestionIndex + 1);
+    }
+}
+
+// 診断実行
+async function submitDiagnosis() {
+    try {
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>診断中...';
+        
+        const response = await fetch('/api/diagnosis/calculate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ answers })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            diagnosisResult = data.result;
+            showResult();
+        } else {
+            alert(data.error || '診断に失敗しました');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check-circle mr-2"></i>診断する';
+        }
+    } catch (error) {
+        console.error('診断エラー:', error);
+        alert('診断に失敗しました');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-check-circle mr-2"></i>診断する';
+    }
+}
+
+// 結果表示
 function showResult() {
-    document.getElementById('diagnosisQuestions').classList.add('hidden');
-    document.getElementById('diagnosisResult').classList.remove('hidden');
+    const questionContainer = document.getElementById('questionContainer');
+    const navigationButtons = document.getElementById('navigationButtons');
+    const resultContainer = document.getElementById('resultContainer');
     
-    // 診断ロジック
-    const result = calculateResult();
+    questionContainer.classList.add('hidden');
+    navigationButtons.classList.add('hidden');
+    resultContainer.classList.remove('hidden');
     
-    // 結果表示
-    renderResult(result);
+    // プログレスバーを100%に
+    document.getElementById('progressBar').style.width = '100%';
+    document.getElementById('progressText').textContent = `${questions.length} / ${questions.length}`;
     
-    // アクセス解析: 診断完了
-    trackDiagnosisComplete(result.type);
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 診断結果の計算
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function calculateResult() {
-    // 診断ロジック
-    const q1 = answers.q1; // 畳の状態
-    const q2 = answers.q2; // 使用年数
-    const q3 = answers.q3; // 具体的な問題
-    const q4 = answers.q4; // 化学畳表の有無
-    const q5 = answers.q5; // 目的
-    
-    // 新調工事が必要なケース
-    if (q1 === 'bad' || q2 === 'over15' || q3 === 'hole' || q3 === 'mold') {
-        return {
-            type: 'shincho',
-            title: '新調工事（畳の全交換）をおすすめします',
-            description: '畳床から新しくする必要があります。',
-            icon: 'fa-home',
-            explanation: '畳床（芯材）が劣化している、または大きな損傷がある場合は、新調工事が最適です。'
-        };
-    }
-    
-    // 表替えが適切なケース
-    if (q1 === 'medium' || q2 === '8to15' || q3 === 'stain' || q3 === 'fading') {
-        return {
-            type: 'omote',
-            title: '表替えをおすすめします',
-            description: '畳表（ゴザ）のみ新しくします。',
-            icon: 'fa-layer-group',
-            explanation: '畳床は問題なく、表面（畳表）のみ劣化している場合に適しています。'
-        };
-    }
-    
-    // 裏返しが適切なケース（比較的新しい畳）
-    if (q2 === 'under5' || q3 === 'minor') {
-        return {
-            type: 'uragaeshi',
-            title: '裏返しをおすすめします',
-            description: '現在の畳表を裏返して使用します。',
-            icon: 'fa-sync-alt',
-            explanation: '畳表の裏面がまだ使える状態であれば、経済的な選択肢です。'
-        };
-    }
-    
-    // デフォルトは表替え
-    return {
-        type: 'omote',
-        title: '表替えをおすすめします',
-        description: '畳表（ゴザ）のみ新しくします。',
-        icon: 'fa-layer-group',
-        explanation: '畳床は問題なく、表面（畳表）のみ劣化している場合に適しています。'
+    // 工法名の日本語表示
+    const methodNames = {
+        'shincho': '新調工事',
+        'omoteae': '表替え',
+        'urakaeshi': '裏返し'
     };
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 診断結果の描画
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function renderResult(result) {
-    const resultContainer = document.getElementById('resultContent');
-    const priceInfo = priceSettings[result.type] || {};
     
-    const minPrice = priceInfo.min_price || 0;
-    const maxPrice = priceInfo.max_price || 0;
-    const popularPrice = priceInfo.popular_price || 0;
-    const unit = priceInfo.unit || '畳';
-    const duration = priceInfo.duration || '—';
+    // 素材名の日本語表示
+    const materialNames = {
+        'igusa': '天然い草',
+        'chemical': '化学表（和紙・ポリプロピレン）'
+    };
     
-    // カテゴリー別の説明と図解
-    const categoryInfo = getCategoryInfo(result.type);
+    // 緊急度の日本語表示とスタイル
+    const urgencyInfo = {
+        'urgent': { label: '早急な対応が必要です', color: 'text-red-600', bgColor: 'bg-red-50', icon: 'fa-exclamation-circle' },
+        'soon': { label: '近いうちに対応をお勧めします', color: 'text-orange-600', bgColor: 'bg-orange-50', icon: 'fa-exclamation-triangle' },
+        'consider': { label: '検討をお勧めします', color: 'text-yellow-600', bgColor: 'bg-yellow-50', icon: 'fa-info-circle' },
+        'not_urgent': { label: '今すぐの対応は不要ですが、不安があればご相談ください', color: 'text-green-600', bgColor: 'bg-green-50', icon: 'fa-check-circle' }
+    };
+    
+    const urgency = urgencyInfo[diagnosisResult.urgencyLevel];
     
     resultContainer.innerHTML = `
-        <div class="text-center mb-8">
-            <div class="inline-block bg-purple-100 rounded-full p-6 mb-4">
-                <i class="fas ${result.icon} text-6xl text-purple-600"></i>
-            </div>
-            <h2 class="text-3xl font-bold text-gray-800 mb-2">${result.title}</h2>
-            <p class="text-gray-600">${result.description}</p>
-        </div>
-        
-        <!-- カテゴリー説明 -->
-        <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg mb-8">
-            <h3 class="font-bold text-blue-900 mb-3 flex items-center">
-                <i class="fas fa-info-circle mr-2"></i>
-                ${categoryInfo.title}とは？
-            </h3>
-            <p class="text-sm text-blue-800 mb-4">${categoryInfo.description}</p>
-            ${categoryInfo.diagram}
-        </div>
-        
-        <!-- 料金情報 -->
-        <div class="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-8 mb-8">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">
-                <i class="fas fa-yen-sign text-purple-600 mr-2"></i>
-                料金の目安
-            </h3>
-            ${minPrice > 0 && maxPrice > 0 ? `
-                <div class="space-y-4">
-                    ${popularPrice > 0 ? `
-                        <div class="bg-gradient-to-r from-orange-100 to-yellow-100 rounded-lg p-6 shadow-md border-2 border-orange-300">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="inline-block bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                                    <i class="fas fa-star mr-1"></i>お客様に人気のプラン
-                                </span>
-                            </div>
-                            <p class="text-4xl font-bold text-orange-600 mb-1">
-                                ${popularPrice.toLocaleString()}<span class="text-xl text-gray-600">円</span>
-                            </p>
-                            <p class="text-gray-600">/${unit}</p>
-                        </div>
-                    ` : ''}
-                    <div class="bg-white rounded-lg p-6 shadow-md">
-                        <p class="text-gray-600 mb-2">価格帯</p>
-                        <p class="text-2xl font-bold text-purple-600">
-                            ${minPrice.toLocaleString()}円 〜 ${maxPrice.toLocaleString()}円
-                        </p>
-                        <p class="text-gray-600">/${unit}</p>
-                    </div>
+        <div class="bg-white rounded-lg shadow-md p-8">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
+                    <i class="fas fa-clipboard-check text-3xl text-blue-600"></i>
                 </div>
-            ` : `
-                <p class="text-gray-600">料金については直接お問い合わせください</p>
-            `}
-            
-            <div class="mt-6 bg-white rounded-lg p-6 shadow-md">
-                <h4 class="font-bold text-gray-700 mb-2">
-                    <i class="fas fa-clock text-blue-600 mr-2"></i>
-                    工期の目安
-                </h4>
-                <p class="text-xl font-bold text-blue-600">${duration}</p>
+                <h2 class="text-3xl font-bold text-gray-800">診断結果</h2>
+                <p class="text-gray-600 mt-2">あなたの畳に最適な工法をご提案します</p>
             </div>
-        </div>
-        
-        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-6 rounded-lg mb-8">
-            <h4 class="font-bold text-yellow-800 mb-2">
-                <i class="fas fa-info-circle mr-2"></i>
-                ご注意
-            </h4>
-            <p class="text-sm text-yellow-700">
-                この診断結果はあくまで目安です。実際の状況により異なる場合がございます。<br>
-                正確なお見積もりは、現地調査の上でご提案させていただきます。
-            </p>
+            
+            <!-- 緊急度 -->
+            <div class="mb-8 p-4 rounded-lg ${urgency.bgColor}">
+                <div class="flex items-center">
+                    <i class="fas ${urgency.icon} text-2xl ${urgency.color} mr-3"></i>
+                    <span class="text-lg font-bold ${urgency.color}">${urgency.label}</span>
+                </div>
+            </div>
+            
+            <!-- 推奨工法 -->
+            <div class="mb-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-3 flex items-center">
+                    <i class="fas fa-tools text-blue-600 mr-2"></i>
+                    推奨工法
+                </h3>
+                <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                    <p class="text-2xl font-bold text-blue-600">${methodNames[diagnosisResult.recommendedMethod]}</p>
+                </div>
+            </div>
+            
+            <!-- 推奨素材 -->
+            <div class="mb-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-3 flex items-center">
+                    <i class="fas fa-leaf text-green-600 mr-2"></i>
+                    推奨素材
+                </h3>
+                <div class="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+                    <p class="text-xl font-bold text-green-600">${materialNames[diagnosisResult.recommendedMaterial]}</p>
+                </div>
+            </div>
+            
+            <!-- 概算費用 -->
+            <div class="mb-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-3 flex items-center">
+                    <i class="fas fa-yen-sign text-purple-600 mr-2"></i>
+                    概算費用（1畳あたり）
+                </h3>
+                <div class="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
+                    <p class="text-2xl font-bold text-purple-600">
+                        ${diagnosisResult.estimatedCostMin.toLocaleString()}円 〜 ${diagnosisResult.estimatedCostMax.toLocaleString()}円
+                    </p>
+                    <p class="text-sm text-gray-600 mt-2">※畳表・畳床の品質により変動します</p>
+                </div>
+            </div>
+            
+            <!-- 説明 -->
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-gray-800 mb-3 flex items-center">
+                    <i class="fas fa-info-circle text-gray-600 mr-2"></i>
+                    詳細説明
+                </h3>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <p class="text-gray-700 leading-relaxed">${diagnosisResult.explanation}</p>
+                </div>
+            </div>
+            
+            <!-- お問い合わせボタン -->
+            ${diagnosisResult.inquiryUrl ? `
+                <div class="text-center">
+                    <a href="${diagnosisResult.inquiryUrl}" 
+                       class="inline-block bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-4 px-8 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl">
+                        <i class="fas fa-envelope mr-2"></i>お問い合わせページはこちら
+                    </a>
+                    <p class="text-sm text-gray-600 mt-4">
+                        無料でお見積もり・ご相談を承ります
+                    </p>
+                </div>
+            ` : ''}
+            
+            <!-- もう一度診断 -->
+            <div class="text-center mt-6">
+                <button onclick="restartDiagnosis()" 
+                        class="text-blue-600 hover:text-blue-700 font-semibold">
+                    <i class="fas fa-redo mr-2"></i>もう一度診断する
+                </button>
+            </div>
         </div>
     `;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// カテゴリー別の説明情報
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function getCategoryInfo(type) {
-    const infoMap = {
-        shincho: {
-            title: '新調工事（しんちょうこうじ）',
-            description: '畳床（芯材）から新しく作り直す工事です。畳全体を新品に交換するため、最も長持ちします。畳床の沈み込みや大きな損傷がある場合に適しています。',
-            diagram: `
-                <div class="bg-white p-4 rounded-lg">
-                    <div class="grid grid-cols-3 gap-2 text-center">
-                        <div class="p-3 bg-gray-800 text-white rounded">畳表（新品）</div>
-                        <div class="text-2xl flex items-center justify-center">→</div>
-                        <div class="p-3 bg-green-600 text-white rounded font-bold">新品</div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2 text-center mt-2">
-                        <div class="p-3 bg-gray-600 text-white rounded">畳床（新品）</div>
-                        <div class="text-2xl flex items-center justify-center">→</div>
-                        <div class="p-3 bg-green-600 text-white rounded font-bold">新品</div>
-                    </div>
-                    <p class="text-xs text-gray-600 mt-3">※畳表も畳床も全て新しくします</p>
-                </div>
-            `
-        },
-        omote: {
-            title: '表替え（おもてがえ）',
-            description: '畳表（ゴザ部分）だけを新しいものに交換する工事です。畳床はそのまま使用するため、費用を抑えられます。表面の変色や小さな傷がある場合に適しています。',
-            diagram: `
-                <div class="bg-white p-4 rounded-lg">
-                    <div class="grid grid-cols-3 gap-2 text-center">
-                        <div class="p-3 bg-gray-800 text-white rounded">畳表（古い）</div>
-                        <div class="text-2xl flex items-center justify-center">→</div>
-                        <div class="p-3 bg-green-600 text-white rounded font-bold">新品</div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2 text-center mt-2">
-                        <div class="p-3 bg-blue-600 text-white rounded">畳床（そのまま）</div>
-                        <div class="text-2xl flex items-center justify-center">→</div>
-                        <div class="p-3 bg-blue-600 text-white rounded">そのまま使用</div>
-                    </div>
-                    <p class="text-xs text-gray-600 mt-3">※畳表のみ交換します</p>
-                </div>
-            `
-        },
-        uragaeshi: {
-            title: '裏返し（うらがえし）',
-            description: '現在の畳表を一度はがし、裏面を表にして張り直す工事です。最も経済的な選択肢で、畳表が比較的新しい場合（3〜5年以内）に適しています。',
-            diagram: `
-                <div class="bg-white p-4 rounded-lg">
-                    <div class="grid grid-cols-3 gap-2 text-center">
-                        <div class="p-3 bg-gray-700 text-white rounded">畳表（表面）</div>
-                        <div class="text-2xl flex items-center justify-center">→</div>
-                        <div class="p-3 bg-green-500 text-white rounded font-bold">裏面を使用</div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2 text-center mt-2">
-                        <div class="p-3 bg-blue-600 text-white rounded">畳床（そのまま）</div>
-                        <div class="text-2xl flex items-center justify-center">→</div>
-                        <div class="p-3 bg-blue-600 text-white rounded">そのまま使用</div>
-                    </div>
-                    <p class="text-xs text-gray-600 mt-3">※畳表を裏返して再利用します</p>
-                </div>
-            `
-        }
-    };
-    
-    return infoMap[type] || infoMap.omote;
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// お問い合わせ（アクセス解析付き）
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-async function trackContactClick() {
-    try {
-        await fetch('/api/analytics/contact-click', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                path: '/diagnosis',
-                contact_type: 'form'
-            })
-        });
-    } catch (error) {
-        console.error('Failed to track contact click:', error);
-    }
-}
-
-async function trackPhoneClick() {
-    try {
-        await fetch('/api/analytics/phone-click', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                path: '/diagnosis',
-                contact_type: 'phone'
-            })
-        });
-    } catch (error) {
-        console.error('Failed to track phone click:', error);
-    }
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// やり直し
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 診断をやり直す
 function restartDiagnosis() {
-    location.reload();
+    currentQuestionIndex = 0;
+    answers = {};
+    diagnosisResult = null;
+    
+    const questionContainer = document.getElementById('questionContainer');
+    const navigationButtons = document.getElementById('navigationButtons');
+    const resultContainer = document.getElementById('resultContainer');
+    
+    questionContainer.classList.remove('hidden');
+    navigationButtons.classList.remove('hidden');
+    resultContainer.classList.add('hidden');
+    
+    showQuestion(0);
 }
