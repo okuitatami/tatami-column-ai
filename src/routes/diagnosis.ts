@@ -28,17 +28,19 @@ diagnosis.post('/calculate', async (c) => {
     // ユーザーの診断設定を取得（ログインしている場合）
     let preferredMaterial: 'natural' | 'chemical' | 'both' = 'both';
     let inquiryUrl = '#contact';
+    let pricing = undefined;
 
     if (userId) {
       const settings = await getDiagnosisSettings(c.env.DB, userId);
       if (settings) {
         preferredMaterial = settings.preferredMaterial as 'natural' | 'chemical' | 'both';
         inquiryUrl = settings.inquiryUrl;
+        pricing = settings.pricing;
       }
     }
 
-    // 診断結果を計算
-    const result = calculateDiagnosis(answers, preferredMaterial);
+    // 診断結果を計算（価格設定を渡す）
+    const result = calculateDiagnosis(answers, preferredMaterial, pricing);
 
     // セッションIDを生成
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
@@ -67,17 +69,32 @@ diagnosis.post('/settings', async (c) => {
       return c.json({ error: '認証が必要です' }, 401);
     }
 
-    const { preferredMaterial, inquiryUrl } = await c.req.json();
+    const { preferredMaterial, inquiryUrl, pricing } = await c.req.json();
 
-    if (!preferredMaterial || !inquiryUrl) {
-      return c.json({ error: 'preferredMaterialとinquiryUrlは必須です' }, 400);
+    if (!preferredMaterial) {
+      return c.json({ error: 'preferredMaterialは必須です' }, 400);
     }
 
     if (!['natural', 'chemical', 'both'].includes(preferredMaterial)) {
       return c.json({ error: 'preferredMaterialは natural, chemical, both のいずれかです' }, 400);
     }
 
-    await saveDiagnosisSettings(c.env.DB, user.id, preferredMaterial, inquiryUrl);
+    // 価格設定の検証
+    if (!pricing || !pricing.urakaeshi || !pricing.omoteae || !pricing.shincho) {
+      return c.json({ error: '価格設定が不正です' }, 400);
+    }
+
+    // 価格が正の整数であることを確認
+    const validatePrice = (price: any) => {
+      return price && typeof price.min === 'number' && typeof price.max === 'number' &&
+             price.min > 0 && price.max > 0 && price.min <= price.max;
+    };
+
+    if (!validatePrice(pricing.urakaeshi) || !validatePrice(pricing.omoteae) || !validatePrice(pricing.shincho)) {
+      return c.json({ error: '価格設定の形式が不正です' }, 400);
+    }
+
+    await saveDiagnosisSettings(c.env.DB, user.id, preferredMaterial, inquiryUrl || '', pricing);
 
     return c.json({ success: true });
   } catch (error) {
@@ -98,7 +115,15 @@ diagnosis.get('/settings', async (c) => {
 
     return c.json({
       success: true,
-      settings: settings || { preferredMaterial: 'both', inquiryUrl: '' },
+      settings: settings || {
+        preferredMaterial: 'both',
+        inquiryUrl: '',
+        pricing: {
+          urakaeshi: { min: 5000, max: 8000 },
+          omoteae: { min: 8000, max: 15000 },
+          shincho: { min: 15000, max: 25000 },
+        },
+      },
     });
   } catch (error) {
     console.error('Settings fetch error:', error);

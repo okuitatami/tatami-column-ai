@@ -142,6 +142,111 @@ app.get('/diagnosis-settings', (c) => {
                 </p>
             </div>
 
+            <!-- 価格設定 -->
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-yen-sign mr-2 text-purple-600"></i>
+                    概算費用の価格設定
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">
+                    診断結果に表示される概算費用の価格帯を設定してください（1畳あたり）。
+                </p>
+                
+                <div class="space-y-6">
+                    <!-- 裏返し -->
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <h4 class="font-bold text-gray-800 mb-3">裏返し</h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-2">最低価格（円）</label>
+                                <input 
+                                    type="number" 
+                                    id="priceUrakaeshiMin" 
+                                    min="0" 
+                                    step="1000"
+                                    placeholder="5000"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                >
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-2">最高価格（円）</label>
+                                <input 
+                                    type="number" 
+                                    id="priceUrakaeshiMax" 
+                                    min="0" 
+                                    step="1000"
+                                    placeholder="8000"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 表替え -->
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <h4 class="font-bold text-gray-800 mb-3">表替え</h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-2">最低価格（円）</label>
+                                <input 
+                                    type="number" 
+                                    id="priceOmoteaeMin" 
+                                    min="0" 
+                                    step="1000"
+                                    placeholder="8000"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                >
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-2">最高価格（円）</label>
+                                <input 
+                                    type="number" 
+                                    id="priceOmoteaeMax" 
+                                    min="0" 
+                                    step="1000"
+                                    placeholder="15000"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 新調 -->
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <h4 class="font-bold text-gray-800 mb-3">新調工事</h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-2">最低価格（円）</label>
+                                <input 
+                                    type="number" 
+                                    id="priceShinchoMin" 
+                                    min="0" 
+                                    step="1000"
+                                    placeholder="15000"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                >
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-2">最高価格（円）</label>
+                                <input 
+                                    type="number" 
+                                    id="priceShinchoMax" 
+                                    min="0" 
+                                    step="1000"
+                                    placeholder="25000"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="text-xs text-gray-500 mt-4">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    価格は「畳表・畳床の品質により変動します」と診断結果画面に自動で表示されます
+                </p>
+            </div>
+
             <!-- プレビューと保存 -->
             <div class="flex items-center justify-between pt-6 border-t border-gray-200">
                 <button 
@@ -159,38 +264,6 @@ app.get('/diagnosis-settings', (c) => {
                     <i class="fas fa-save mr-2"></i>設定を保存
                 </button>
             </div>
-        </div>
-
-        <!-- 設定済み価格について -->
-        <div class="mt-8 bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-            <h3 class="text-lg font-bold text-blue-900 mb-3">
-                <i class="fas fa-yen-sign mr-2"></i>
-                概算費用について
-            </h3>
-            <p class="text-blue-800 mb-4">
-                診断結果に表示される概算費用は、以下の標準価格に基づいて自動計算されます：
-            </p>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-white rounded-lg p-4 border border-blue-200">
-                    <div class="text-sm text-gray-600 mb-1">裏返し</div>
-                    <div class="text-xl font-bold text-blue-600">5,000〜8,000円</div>
-                    <div class="text-xs text-gray-500 mt-1">1畳あたり</div>
-                </div>
-                <div class="bg-white rounded-lg p-4 border border-blue-200">
-                    <div class="text-sm text-gray-600 mb-1">表替え</div>
-                    <div class="text-xl font-bold text-blue-600">8,000〜15,000円</div>
-                    <div class="text-xs text-gray-500 mt-1">1畳あたり</div>
-                </div>
-                <div class="bg-white rounded-lg p-4 border border-blue-200">
-                    <div class="text-sm text-gray-600 mb-1">新調</div>
-                    <div class="text-xl font-bold text-blue-600">15,000〜25,000円</div>
-                    <div class="text-xs text-gray-500 mt-1">1畳あたり</div>
-                </div>
-            </div>
-            <p class="text-sm text-blue-700 mt-4">
-                <i class="fas fa-info-circle mr-1"></i>
-                価格は畳表・畳床の品質により変動することが診断結果画面に自動で表示されます。
-            </p>
         </div>
     </main>
 

@@ -93,7 +93,12 @@ export const DIAGNOSIS_QUESTIONS = [
 // 診断結果を計算
 export function calculateDiagnosis(
   answers: Record<string, string | string[]>,
-  preferredMaterial: 'natural' | 'chemical' | 'both'
+  preferredMaterial: 'natural' | 'chemical' | 'both',
+  pricing?: {
+    urakaeshi: { min: number; max: number };
+    omoteae: { min: number; max: number };
+    shincho: { min: number; max: number };
+  }
 ): {
   recommendedMethod: string;
   recommendedMaterial: string;
@@ -102,6 +107,15 @@ export function calculateDiagnosis(
   urgencyLevel: string;
   explanation: string;
 } {
+  // デフォルト価格（設定がない場合）
+  const defaultPricing = {
+    urakaeshi: { min: 5000, max: 8000 },
+    omoteae: { min: 8000, max: 15000 },
+    shincho: { min: 15000, max: 25000 },
+  };
+  
+  const prices = pricing || defaultPricing;
+  
   let urgencyScore = 0;
   let methodScores = { urakaeshi: 0, omoteae: 0, shincho: 0 };
   let materialScores = { igusa: 0, chemical: 0 };
@@ -154,15 +168,15 @@ export function calculateDiagnosis(
     }
   }
 
-  // 費用を計算
-  let estimatedCostMin = 5000;
-  let estimatedCostMax = 8000;
+  // 費用を計算（設定された価格を使用）
+  let estimatedCostMin = prices.urakaeshi.min;
+  let estimatedCostMax = prices.urakaeshi.max;
   if (recommendedMethod === 'omoteae') {
-    estimatedCostMin = 8000;
-    estimatedCostMax = 15000;
+    estimatedCostMin = prices.omoteae.min;
+    estimatedCostMax = prices.omoteae.max;
   } else if (recommendedMethod === 'shincho') {
-    estimatedCostMin = 15000;
-    estimatedCostMax = 25000;
+    estimatedCostMin = prices.shincho.min;
+    estimatedCostMax = prices.shincho.max;
   }
 
   // 緊急度を判定
@@ -202,17 +216,37 @@ export async function saveDiagnosisSettings(
   db: D1Database,
   userId: number,
   preferredMaterial: string,
-  inquiryUrl: string
+  inquiryUrl: string,
+  pricing: {
+    urakaeshi: { min: number; max: number };
+    omoteae: { min: number; max: number };
+    shincho: { min: number; max: number };
+  }
 ): Promise<void> {
   // 既存の設定を削除
   await db.prepare('DELETE FROM diagnosis_settings WHERE user_id = ?').bind(userId).run();
 
   // 新しい設定を保存
   await db
-    .prepare(
-      'INSERT INTO diagnosis_settings (user_id, preferred_material, inquiry_url) VALUES (?, ?, ?)'
+    .prepare(`
+      INSERT INTO diagnosis_settings (
+        user_id, preferred_material, inquiry_url,
+        price_urakaeshi_min, price_urakaeshi_max,
+        price_omoteae_min, price_omoteae_max,
+        price_shincho_min, price_shincho_max
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    .bind(
+      userId,
+      preferredMaterial,
+      inquiryUrl,
+      pricing.urakaeshi.min,
+      pricing.urakaeshi.max,
+      pricing.omoteae.min,
+      pricing.omoteae.max,
+      pricing.shincho.min,
+      pricing.shincho.max
     )
-    .bind(userId, preferredMaterial, inquiryUrl)
     .run();
 }
 
@@ -220,9 +254,25 @@ export async function saveDiagnosisSettings(
 export async function getDiagnosisSettings(
   db: D1Database,
   userId: number
-): Promise<{ preferredMaterial: string; inquiryUrl: string } | null> {
+): Promise<{
+  preferredMaterial: string;
+  inquiryUrl: string;
+  pricing: {
+    urakaeshi: { min: number; max: number };
+    omoteae: { min: number; max: number };
+    shincho: { min: number; max: number };
+  };
+} | null> {
   const result = await db
-    .prepare('SELECT preferred_material, inquiry_url FROM diagnosis_settings WHERE user_id = ?')
+    .prepare(`
+      SELECT 
+        preferred_material, inquiry_url,
+        price_urakaeshi_min, price_urakaeshi_max,
+        price_omoteae_min, price_omoteae_max,
+        price_shincho_min, price_shincho_max
+      FROM diagnosis_settings 
+      WHERE user_id = ?
+    `)
     .bind(userId)
     .first();
 
@@ -231,6 +281,20 @@ export async function getDiagnosisSettings(
   return {
     preferredMaterial: result.preferred_material as string,
     inquiryUrl: result.inquiry_url as string,
+    pricing: {
+      urakaeshi: {
+        min: (result.price_urakaeshi_min as number) || 5000,
+        max: (result.price_urakaeshi_max as number) || 8000,
+      },
+      omoteae: {
+        min: (result.price_omoteae_min as number) || 8000,
+        max: (result.price_omoteae_max as number) || 15000,
+      },
+      shincho: {
+        min: (result.price_shincho_min as number) || 15000,
+        max: (result.price_shincho_max as number) || 25000,
+      },
+    },
   };
 }
 
