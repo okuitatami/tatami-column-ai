@@ -227,6 +227,8 @@ function showResult() {
     // 素材名の日本語表示
     const materialNames = {
         'igusa': '天然い草',
+        'polypropylene': '化学表（ポリプロピレン）',
+        'paper': '化学表（和紙）',
         'chemical': '化学表（和紙・ポリプロピレン）'
     };
     

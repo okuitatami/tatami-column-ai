@@ -385,13 +385,41 @@ function renderEditView() {
     editContent.appendChild(createEditField('title', 'タイトル', currentColumn.title, 'text'));
     
     // 導入文
-    editContent.appendChild(createEditField('introduction', '導入文', currentColumn.introduction, 'textarea'));
+    const introDiv = document.createElement('div');
+    introDiv.className = 'space-y-4 p-4 bg-blue-50 rounded-lg border-2 border-blue-200';
+    introDiv.innerHTML = `
+        <div class="flex items-center justify-between">
+            <h4 class="font-bold text-gray-700">導入文</h4>
+            <div class="flex space-x-2">
+                <button onclick="evaluateColumn(true)" class="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600" title="このセクションは良質です">
+                    <i class="fas fa-thumbs-up mr-1"></i>承認
+                </button>
+                <button onclick="correctSection(0, 'introduction')" class="text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600" title="このセクションを訂正">
+                    <i class="fas fa-edit mr-1"></i>訂正
+                </button>
+            </div>
+        </div>
+    `;
+    introDiv.appendChild(createEditField('introduction', '本文', currentColumn.introduction, 'textarea'));
+    editContent.appendChild(introDiv);
     
     // 見出しと本文
     currentColumn.sections.forEach((section, index) => {
         const sectionDiv = document.createElement('div');
-        sectionDiv.className = 'space-y-4 p-4 bg-gray-50 rounded-lg';
-        sectionDiv.innerHTML = `<h4 class="font-bold text-gray-700">セクション ${index + 1}</h4>`;
+        sectionDiv.className = 'space-y-4 p-4 bg-gray-50 rounded-lg border-2 border-gray-200';
+        sectionDiv.innerHTML = `
+            <div class="flex items-center justify-between">
+                <h4 class="font-bold text-gray-700">セクション ${index + 1}</h4>
+                <div class="flex space-x-2">
+                    <button onclick="evaluateColumn(true)" class="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600" title="このセクションは良質です">
+                        <i class="fas fa-thumbs-up mr-1"></i>承認
+                    </button>
+                    <button onclick="correctSection(${index}, 'section')" class="text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600" title="このセクションを訂正">
+                        <i class="fas fa-edit mr-1"></i>訂正
+                    </button>
+                </div>
+            </div>
+        `;
         
         sectionDiv.appendChild(createEditField(`section_${index}_heading`, '見出し', section.heading, 'text'));
         sectionDiv.appendChild(createEditField(`section_${index}_content`, '本文', section.content, 'textarea'));
@@ -401,8 +429,20 @@ function renderEditView() {
     
     // クロージング
     const closingDiv = document.createElement('div');
-    closingDiv.className = 'space-y-4 p-4 bg-gray-50 rounded-lg';
-    closingDiv.innerHTML = `<h4 class="font-bold text-gray-700">クロージング</h4>`;
+    closingDiv.className = 'space-y-4 p-4 bg-purple-50 rounded-lg border-2 border-purple-200';
+    closingDiv.innerHTML = `
+        <div class="flex items-center justify-between">
+            <h4 class="font-bold text-gray-700">クロージング</h4>
+            <div class="flex space-x-2">
+                <button onclick="evaluateColumn(true)" class="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600" title="このセクションは良質です">
+                    <i class="fas fa-thumbs-up mr-1"></i>承認
+                </button>
+                <button onclick="correctSection(0, 'closing')" class="text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600" title="このセクションを訂正">
+                    <i class="fas fa-edit mr-1"></i>訂正
+                </button>
+            </div>
+        </div>
+    `;
     closingDiv.appendChild(createEditField('closing_heading', '見出し', currentColumn.closing.heading, 'text'));
     closingDiv.appendChild(createEditField('closing_content', '本文', currentColumn.closing.content, 'textarea'));
     editContent.appendChild(closingDiv);
@@ -569,19 +609,6 @@ function renderPreview() {
             <h2 class="text-2xl font-bold mt-8 mb-4">${section.heading}</h2>
             <p class="mb-4 whitespace-pre-wrap">${section.content}</p>
         `;
-        
-        // セクションの中間（2番目のセクション後）に診断チャートボタンを挿入
-        if (index === 1 && currentColumn.sections.length > 2) {
-            html += `
-            <div class="my-8 p-6 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white text-center">
-                <h3 class="text-2xl font-bold mb-3">🔍 あなたの畳に最適な工法を診断</h3>
-                <p class="mb-4 text-white opacity-90">簡単な質問に答えるだけで、あなたの畳に最適な工法と素材をご提案します。</p>
-                <a href="/diagnosis" target="_blank" class="inline-block bg-white text-purple-600 font-bold py-3 px-8 rounded-lg hover:bg-gray-100 transition-all">
-                    <i class="fas fa-clipboard-check mr-2"></i>無料診断を始める
-                </a>
-            </div>
-            `;
-        }
     });
     
     html += `
@@ -603,7 +630,51 @@ function renderPreview() {
     
     html += `</div>`;
     
+    // 診断チャートURL
+    const diagnosisUrl = window.location.origin + '/diagnosis';
+    html += `
+        <div class="mt-8 p-6 bg-blue-50 border-2 border-blue-200 rounded-lg">
+            <h3 class="text-lg font-bold text-blue-900 mb-3">
+                <i class="fas fa-clipboard-check mr-2"></i>
+                診断チャートURL
+            </h3>
+            <p class="text-sm text-blue-800 mb-3">
+                コラム内に診断チャートへのリンクを設置する場合は、以下のURLをコピーしてください：
+            </p>
+            <div class="flex items-center space-x-2">
+                <input 
+                    type="text" 
+                    value="${diagnosisUrl}" 
+                    readonly 
+                    class="flex-1 px-4 py-2 bg-white border border-blue-300 rounded text-sm"
+                    id="diagnosisUrlField"
+                >
+                <button 
+                    onclick="copyDiagnosisUrl()" 
+                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors whitespace-nowrap"
+                >
+                    <i class="fas fa-copy mr-2"></i>URLコピー
+                </button>
+            </div>
+        </div>
+    `;
+    
     previewContent.innerHTML = html;
+}
+
+// 診断チャートURLをコピー
+async function copyDiagnosisUrl() {
+    const urlField = document.getElementById('diagnosisUrlField');
+    try {
+        await navigator.clipboard.writeText(urlField.value);
+        alert('✅ 診断チャートのURLをコピーしました！');
+    } catch (error) {
+        console.error('Copy error:', error);
+        // フォールバック: 手動選択
+        urlField.select();
+        document.execCommand('copy');
+        alert('✅ 診断チャートのURLをコピーしました！');
+    }
 }
 
 // クリップボードにコピー
@@ -706,36 +777,6 @@ function generateHTML() {
             margin-top: 0;
             color: #667eea;
         }
-        .diagnosis-cta {
-            margin: 2em 0;
-            padding: 2em;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
-            text-align: center;
-        }
-        .diagnosis-cta h3 {
-            color: white;
-            margin-top: 0;
-            margin-bottom: 0.5em;
-        }
-        .diagnosis-cta p {
-            color: rgba(255, 255, 255, 0.9);
-            margin-bottom: 1.5em;
-        }
-        .diagnosis-btn {
-            display: inline-block;
-            padding: 1em 2em;
-            background: white;
-            color: #667eea;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .diagnosis-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
     </style>
 </head>
 <body>
@@ -749,19 +790,6 @@ function generateHTML() {
         <h2>${section.heading}</h2>
         <p>${section.content.replace(/\n/g, '<br>')}</p>
 `;
-        
-        // セクションの中間（2番目のセクション後）に診断チャートボタンを挿入
-        if (index === 1 && currentColumn.sections.length > 2) {
-            html += `
-        <div class="diagnosis-cta">
-            <h3>🔍 あなたの畳に最適な工法を診断</h3>
-            <p>簡単な質問に答えるだけで、あなたの畳に最適な工法と素材をご提案します。</p>
-            <a href="/diagnosis" class="diagnosis-btn">
-                <i class="fas fa-clipboard-check"></i> 無料診断を始める
-            </a>
-        </div>
-`;
-        }
     });
     
     html += `
