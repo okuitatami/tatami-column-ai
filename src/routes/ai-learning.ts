@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { Bindings } from '../types';
 import { getUserFromSession } from '../utils/db';
+import { getSessionIdFromCookie } from '../utils/auth';
 import {
   saveColumnCorrection,
   saveColumnEvaluation,
@@ -12,7 +13,12 @@ const aiLearning = new Hono<{ Bindings: Bindings }>();
 // コラム評価を保存（Yes/No判定）
 aiLearning.post('/evaluate', async (c) => {
   try {
-    const user = await getUserFromSession(c.env.DB, c);
+    const sessionId = getSessionIdFromCookie(c.req.header('Cookie') || '');
+    if (!sessionId) {
+      return c.json({ error: '認証が必要です' }, 401);
+    }
+
+    const user = await getUserFromSession(c.env.DB, sessionId);
     if (!user) {
       return c.json({ error: '認証が必要です' }, 401);
     }
@@ -41,7 +47,12 @@ aiLearning.post('/evaluate', async (c) => {
 // セクション訂正を保存
 aiLearning.post('/correct', async (c) => {
   try {
-    const user = await getUserFromSession(c.env.DB, c);
+    const sessionId = getSessionIdFromCookie(c.req.header('Cookie') || '');
+    if (!sessionId) {
+      return c.json({ error: '認証が必要です' }, 401);
+    }
+
+    const user = await getUserFromSession(c.env.DB, sessionId);
     if (!user) {
       return c.json({ error: '認証が必要です' }, 401);
     }
@@ -91,7 +102,12 @@ aiLearning.post('/correct', async (c) => {
 // 承認率を取得
 aiLearning.get('/approval-rate', async (c) => {
   try {
-    const user = await getUserFromSession(c.env.DB, c);
+    const sessionId = getSessionIdFromCookie(c.req.header('Cookie') || '');
+    if (!sessionId) {
+      return c.json({ error: '認証が必要です' }, 401);
+    }
+
+    const user = await getUserFromSession(c.env.DB, sessionId);
     if (!user) {
       return c.json({ error: '認証が必要です' }, 401);
     }
