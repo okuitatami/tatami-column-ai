@@ -394,7 +394,7 @@ function renderEditView() {
                 <button onclick="evaluateColumn(true)" class="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600" title="このセクションは良質です">
                     <i class="fas fa-thumbs-up mr-1"></i>承認
                 </button>
-                <button onclick="correctSection(0, 'introduction')" class="text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600" title="このセクションを訂正">
+                <button onclick="toggleCorrectionForm(0, 'introduction')" class="text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600" title="このセクションを訂正">
                     <i class="fas fa-edit mr-1"></i>訂正
                 </button>
             </div>
@@ -414,7 +414,7 @@ function renderEditView() {
                     <button onclick="evaluateColumn(true)" class="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600" title="このセクションは良質です">
                         <i class="fas fa-thumbs-up mr-1"></i>承認
                     </button>
-                    <button onclick="correctSection(${index}, 'section')" class="text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600" title="このセクションを訂正">
+                    <button onclick="toggleCorrectionForm(${index}, 'section')" class="text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600" title="このセクションを訂正">
                         <i class="fas fa-edit mr-1"></i>訂正
                     </button>
                 </div>
@@ -437,7 +437,7 @@ function renderEditView() {
                 <button onclick="evaluateColumn(true)" class="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600" title="このセクションは良質です">
                     <i class="fas fa-thumbs-up mr-1"></i>承認
                 </button>
-                <button onclick="correctSection(0, 'closing')" class="text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600" title="このセクションを訂正">
+                <button onclick="toggleCorrectionForm(0, 'closing')" class="text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600" title="このセクションを訂正">
                     <i class="fas fa-edit mr-1"></i>訂正
                 </button>
             </div>
@@ -916,9 +916,114 @@ async function evaluateColumn(isApproved) {
 }
 
 // AI学習：セクションを訂正
-async function correctSection(sectionIndex, sectionType) {
+// 訂正UIを表示/非表示する関数
+function toggleCorrectionForm(sectionIndex, sectionType) {
+    const formId = `correction-form-${sectionType}-${sectionIndex}`;
+    const existingForm = document.getElementById(formId);
+    
+    // 既にフォームが表示されている場合は閉じる
+    if (existingForm) {
+        existingForm.remove();
+        return;
+    }
+    
+    // フォームを作成
     if (!currentColumn) {
         alert('訂正するコラムが見つかりません');
+        return;
+    }
+    
+    let originalHeading, originalContent, targetDiv;
+    
+    // セクションタイプに応じてデータと挿入位置を取得
+    if (sectionType === 'introduction') {
+        originalHeading = 'はじめに';
+        originalContent = currentColumn.introduction;
+        targetDiv = document.querySelector('.bg-blue-50').parentElement;
+    } else if (sectionType === 'closing') {
+        originalHeading = currentColumn.closing.heading;
+        originalContent = currentColumn.closing.content;
+        targetDiv = document.querySelector('.bg-purple-50').parentElement;
+    } else if (sectionType === 'section') {
+        const section = currentColumn.sections[sectionIndex];
+        originalHeading = section.heading;
+        originalContent = section.content;
+        const allSections = document.querySelectorAll('.bg-gray-50');
+        targetDiv = allSections[sectionIndex]?.parentElement;
+    } else {
+        alert('不正なセクションタイプです');
+        return;
+    }
+    
+    if (!targetDiv) {
+        alert('訂正対象が見つかりません');
+        return;
+    }
+    
+    // 訂正フォームを作成
+    const formDiv = document.createElement('div');
+    formDiv.id = formId;
+    formDiv.className = 'mt-4 p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg space-y-4';
+    formDiv.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+            <h5 class="font-bold text-yellow-800">
+                <i class="fas fa-edit mr-2"></i>訂正内容を入力
+            </h5>
+            <button onclick="toggleCorrectionForm(${sectionIndex}, '${sectionType}')" class="text-gray-600 hover:text-gray-800">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700">訂正後の見出し</label>
+            <input type="text" id="${formId}-heading" value="${originalHeading}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">
+        </div>
+        
+        <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700">訂正後の本文</label>
+            <textarea id="${formId}-content" rows="6" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500">${originalContent}</textarea>
+        </div>
+        
+        <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700">訂正理由（AIの学習に使用）</label>
+            <textarea id="${formId}-reason" rows="3" placeholder="例：文章が硬すぎる、専門用語が多い、地域情報が不足..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500"></textarea>
+        </div>
+        
+        <div class="flex space-x-2">
+            <button onclick="submitCorrection(${sectionIndex}, '${sectionType}', '${formId}')" class="flex-1 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 font-medium">
+                <i class="fas fa-check mr-2"></i>訂正を送信
+            </button>
+            <button onclick="toggleCorrectionForm(${sectionIndex}, '${sectionType}')" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100">
+                キャンセル
+            </button>
+        </div>
+    `;
+    
+    targetDiv.insertAdjacentElement('afterend', formDiv);
+}
+
+// 訂正を送信する関数
+async function submitCorrection(sectionIndex, sectionType, formId) {
+    const headingInput = document.getElementById(`${formId}-heading`);
+    const contentInput = document.getElementById(`${formId}-content`);
+    const reasonInput = document.getElementById(`${formId}-reason`);
+    
+    if (!headingInput || !contentInput || !reasonInput) {
+        alert('フォームが見つかりません');
+        return;
+    }
+    
+    const correctedHeading = headingInput.value.trim();
+    const correctedContent = contentInput.value.trim();
+    const correctionReason = reasonInput.value.trim();
+    
+    if (!correctedHeading || !correctedContent) {
+        alert('見出しと本文は必須です');
+        return;
+    }
+    
+    if (!correctionReason) {
+        alert('訂正理由を入力してください（AIの学習に使用されます）');
         return;
     }
     
@@ -934,19 +1039,7 @@ async function correctSection(sectionIndex, sectionType) {
         const section = currentColumn.sections[sectionIndex];
         originalHeading = section.heading;
         originalContent = section.content;
-    } else {
-        alert('不正なセクションタイプです');
-        return;
     }
-    
-    const correctedHeading = prompt('訂正後の見出し:', originalHeading);
-    if (correctedHeading === null) return; // キャンセル
-    
-    const correctedContent = prompt('訂正後の本文:', originalContent);
-    if (correctedContent === null) return; // キャンセル
-    
-    const correctionReason = prompt('訂正理由（AIの学習に使用されます）:', '');
-    if (correctionReason === null) return; // キャンセル
     
     try {
         showLoading('訂正を送信中...');
@@ -966,7 +1059,7 @@ async function correctSection(sectionIndex, sectionType) {
                 correctedContent: correctedContent,
                 correctionReason: correctionReason,
                 keywords: currentColumn.keywords || [],
-                regions: [] // 必要に応じて地域情報を追加
+                regions: currentColumn.regions || []
             })
         });
         
@@ -975,6 +1068,30 @@ async function correctSection(sectionIndex, sectionType) {
         
         if (data.success) {
             alert('✅ 訂正を受け付けました！AIの学習に活用されます。');
+            
+            // 訂正内容をコラムに反映
+            if (sectionType === 'introduction') {
+                currentColumn.introduction = correctedContent;
+                document.getElementById('introduction').value = correctedContent;
+            } else if (sectionType === 'closing') {
+                currentColumn.closing.heading = correctedHeading;
+                currentColumn.closing.content = correctedContent;
+                document.getElementById('closing_heading').value = correctedHeading;
+                document.getElementById('closing_content').value = correctedContent;
+            } else if (sectionType === 'section') {
+                currentColumn.sections[sectionIndex].heading = correctedHeading;
+                currentColumn.sections[sectionIndex].content = correctedContent;
+                document.getElementById(`section_${sectionIndex}_heading`).value = correctedHeading;
+                document.getElementById(`section_${sectionIndex}_content`).value = correctedContent;
+            }
+            
+            // フォームを閉じる
+            toggleCorrectionForm(sectionIndex, sectionType);
+            
+            // プレビューを更新
+            if (document.getElementById('previewBtn').classList.contains('bg-purple-600')) {
+                renderPreview();
+            }
             
             // 訂正内容を反映
             if (sectionType === 'introduction') {
