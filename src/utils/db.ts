@@ -129,7 +129,8 @@ export async function saveColumnHistory(
   column: ColumnStructure,
   keywords?: string[],
   regions?: string[],
-  targetAudience?: string
+  targetAudience?: string,
+  generationPrompt?: string
 ): Promise<ColumnHistory> {
   // 文字数をカウント
   const fullText = [
@@ -146,8 +147,8 @@ export async function saveColumnHistory(
     .prepare(`
       INSERT INTO column_history (
         user_id, title, introduction, sections, closing, qa,
-        keywords, regions, target_audience, meta_description, character_count
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        keywords, regions, target_audience, meta_description, character_count, generation_prompt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING *
     `)
     .bind(
@@ -161,7 +162,8 @@ export async function saveColumnHistory(
       regions ? JSON.stringify(regions) : null,
       targetAudience || null,
       column.metaDescription || null,
-      characterCount
+      characterCount,
+      generationPrompt || null
     )
     .first<ColumnHistory>();
 

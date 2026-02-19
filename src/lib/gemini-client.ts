@@ -298,6 +298,7 @@ ${regionText ? `【対象地域】\n${regionText}` : ''}
     sections: Array<{ heading: string; content: string }>;
     closing: string;
     qa: Array<{ question: string; answer: string }>;
+    generationPrompt: string;
   }> {
     const keywordText = keywords.join('、');
     const regionText = regions.length > 0 ? regions.join('、') : '';
@@ -417,7 +418,11 @@ ${learningContext || ''}
         throw new Error(`JSONのパースに失敗しました: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
       }
       
-      return result;
+      // プロンプトを結果に追加
+      return {
+        ...result,
+        generationPrompt: prompt,
+      };
     } catch (error: any) {
       console.error('Column generation error:', error);
       throw new Error(`コラムの生成に失敗しました: ${error.message}`);

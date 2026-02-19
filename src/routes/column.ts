@@ -178,7 +178,8 @@ column.post('/generate-column', async (c) => {
           columnData,
           cleanedKeywords,
           cleanedRegions,
-          targetAudience
+          targetAudience,
+          columnData.generationPrompt
         );
       } catch (historyError) {
         console.error('Failed to save column history:', historyError);
